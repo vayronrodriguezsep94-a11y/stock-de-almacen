@@ -1,0 +1,2489 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Control de Almacén</title>
+<style>
+  :root{
+    --verde:#2e7d32; --verde-d:#1b5e20; --rojo:#c62828; --azul:#1565c0; --naranja:#e65100; --naranja-d:#bf360c;
+    --gris-bg:#f2f4f3; --gris-borde:#dcdfe0; --texto:#1f2a24;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    background:var(--gris-bg); color:var(--texto);
+    padding-bottom:70px;
+  }
+  header{
+    background:var(--verde-d); color:#fff; padding:14px 16px;
+    position:sticky; top:0; z-index:20; box-shadow:0 2px 6px rgba(0,0,0,.15);
+  }
+  header h1{margin:0; font-size:18px;}
+  header .sub{font-size:12px; opacity:.85; margin-top:2px;}
+  nav{
+    display:flex; position:sticky; top:56px; z-index:19;
+    background:#fff; border-bottom:1px solid var(--gris-borde);
+    overflow-x:auto;
+  }
+  nav button{
+    flex:1; min-width:80px; padding:12px 6px; border:none; background:none;
+    font-size:13px; font-weight:600; color:#607169; cursor:pointer;
+    border-bottom:3px solid transparent;
+  }
+  nav button.active{color:var(--verde-d); border-bottom-color:var(--verde-d);}
+  main{padding:12px;}
+  .card{
+    background:#fff; border-radius:10px; padding:14px; margin-bottom:12px;
+    box-shadow:0 1px 3px rgba(0,0,0,.08);
+  }
+  .card h2{margin:0 0 10px; font-size:15px; color:var(--verde-d);}
+  label{display:block; font-size:12px; font-weight:600; color:#4b5a52; margin:8px 0 4px;}
+  input[type=text], input[type=number], input[type=date], select, textarea{
+    width:100%; padding:10px; font-size:15px; border:1px solid var(--gris-borde);
+    border-radius:8px; background:#fbfbfb;
+  }
+  input:focus, select:focus, textarea:focus{outline:2px solid var(--verde); background:#fff;}
+  .btn{
+    display:inline-block; padding:11px 16px; border:none; border-radius:8px;
+    font-size:14px; font-weight:700; cursor:pointer; text-align:center;
+  }
+  .btn-full{width:100%;}
+  .btn-verde{background:var(--verde); color:#fff;}
+  .btn-azul{background:var(--azul); color:#fff;}
+  .btn-rojo{background:var(--rojo); color:#fff;}
+  .btn-gris{background:#e3e7e5; color:#333;}
+  .btn-naranja{background:var(--naranja); color:#fff;}
+  .btn-sm{padding:6px 10px; font-size:12px; border-radius:6px;}
+  .row-flex{display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap;}
+  .row-flex > *{flex:1; min-width:110px;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th, td{padding:8px 6px; border-bottom:1px solid #eef0ef; text-align:left;}
+  th{background:#f6f8f7; font-size:11px; text-transform:uppercase; color:#5c6b62;}
+  tr:last-child td{border-bottom:none;}
+  .tag{display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:700;}
+  .tag-op{background:#e3f3e4; color:var(--verde-d);}
+  .tag-inop{background:#fbe4e4; color:var(--rojo);}
+  .badge-stock-bajo{color:var(--rojo); font-weight:700;}
+  .search-box{margin-bottom:10px;}
+  .item-linea{
+    display:flex; gap:8px; align-items:center; background:#f6f8f7;
+    padding:8px; border-radius:8px; margin-bottom:6px; font-size:13px;
+  }
+  .item-linea .desc{flex:1;}
+  .item-linea .cant{width:70px; text-align:right; font-weight:700;}
+  .empty{color:#8a978f; font-style:italic; padding:10px 0; text-align:center;}
+  .modal-bg{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,.45);
+    z-index:50; align-items:flex-end; justify-content:center;
+  }
+  .modal-bg.show{display:flex;}
+  .modal{
+    background:#fff; width:100%; max-width:480px; border-radius:16px 16px 0 0;
+    padding:16px; max-height:88vh; overflow-y:auto;
+  }
+  .modal h3{margin:0 0 12px; color:var(--verde-d);}
+  .modal-actions{display:flex; gap:8px; margin-top:14px;}
+  .modal-actions .btn{flex:1;}
+  .close-x{float:right; font-size:22px; line-height:1; background:none; border:none; color:#888; cursor:pointer;}
+  .grupo-chip{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:34px; height:34px; border-radius:50%; background:#eef2f0;
+    font-weight:700; margin:2px; cursor:pointer; border:2px solid transparent;
+    font-size:14px;
+  }
+  .grupo-chip.sel{background:var(--verde); color:#fff; border-color:var(--verde-d);}
+  .grupos-grid{display:flex; flex-wrap:wrap; gap:2px; margin-bottom:6px;}
+  .resumen-grupo{margin-bottom:14px;}
+  .resumen-grupo .titulo{
+    background:var(--verde-d); color:#fff; padding:8px 10px; border-radius:8px 8px 0 0;
+    font-weight:700; font-size:13px; display:flex; justify-content:space-between;
+  }
+  .resumen-grupo table{border:1px solid var(--gris-borde); border-top:none;}
+  .despacho-mini{
+    border:1px solid var(--gris-borde); border-radius:8px; padding:10px; margin-bottom:8px;
+  }
+  .despacho-mini .top{display:flex; justify-content:space-between; align-items:center; font-size:13px;}
+  .despacho-mini .top strong{color:var(--verde-d);}
+  .toolbar{display:flex; gap:8px; margin-bottom:10px;}
+  .toolbar .btn{flex:1;}
+  .toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:#263238; color:#fff; padding:10px 18px; border-radius:20px;
+    font-size:13px; z-index:100; opacity:0; transition:opacity .3s; pointer-events:none;
+  }
+  .toast.show{opacity:1;}
+  .stat-row{display:flex; gap:8px; margin-bottom:10px;}
+  .stat{flex:1; background:#fff; border-radius:10px; padding:10px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,.08);}
+  .stat .num{font-size:20px; font-weight:800; color:var(--verde-d);}
+  .stat .lbl{font-size:10px; color:#6b7a72; text-transform:uppercase;}
+  datalist{}
+  small.hint{color:#8a978f; display:block; margin-top:4px;}
+
+  /* ===== Comprobante de despacho (cuadro informativo para compartir) ===== */
+  .comprobante-doc{border:1px solid var(--gris-borde); border-radius:12px; overflow:hidden; background:#fff;}
+  .comprobante-header{background:var(--verde-d); color:#fff; padding:16px 18px; display:flex; justify-content:space-between; align-items:flex-start; gap:12px;}
+  .comprobante-header .titulos h3{margin:0; font-size:15px; letter-spacing:.5px;}
+  .comprobante-header .sub{font-size:11px; opacity:.85; margin-top:3px;}
+  .comprobante-grupo-badge{
+    width:60px; height:60px; border-radius:14px; background:#fff; color:var(--verde-d);
+    display:flex; align-items:center; justify-content:center; font-size:32px; font-weight:800;
+    flex:0 0 auto; box-shadow:0 2px 6px rgba(0,0,0,.2); font-family:Arial,sans-serif;
+  }
+  .comprobante-body{padding:16px 18px;}
+  .comprobante-datos{display:flex; flex-direction:column; gap:10px; margin-bottom:14px;}
+  .comprobante-datos .campo{background:#f6f8f7; border-radius:8px; padding:9px 12px;}
+  .comprobante-datos .campo .lbl{font-size:10px; text-transform:uppercase; color:#6b7a72; font-weight:700; letter-spacing:.4px;}
+  .comprobante-datos .campo .val{font-size:15px; font-weight:700; color:var(--texto); margin-top:2px;}
+  .comprobante-productos-titulo{font-size:11px; text-transform:uppercase; color:#6b7a72; font-weight:700; margin:6px 0 6px; letter-spacing:.4px;}
+  .comprobante-foto{margin-top:14px; border:1px solid var(--gris-borde); border-radius:10px; padding:10px; background:#fbfbfb;}
+  .comprobante-footer{padding:10px 18px; background:#f6f8f7; font-size:10px; color:#8a978f; text-align:center;}
+  .comprobante-seccion{margin-bottom:18px;}
+  .comprobante-seccion:last-child{margin-bottom:0;}
+  .comprobante-seccion-titulo{display:flex; align-items:center; gap:8px; margin-bottom:6px;}
+  .comprobante-badge-mini{
+    display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px;
+    border-radius:6px; background:var(--verde); color:#fff; font-weight:800; font-size:13px; flex:0 0 auto;
+  }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<!-- ===================== SELECTOR DE FUNDO ===================== -->
+<div id="pantallaSelector" style="min-height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:24px;">
+  <div style="font-size:44px; margin-bottom:4px;">📦</div>
+  <h1 style="color:var(--verde-d); margin:0 0 4px; font-size:20px;">Control de Almacén</h1>
+  <div style="color:#607169; margin-bottom:26px; font-size:13px;">Selecciona un fundo para continuar</div>
+  <div style="width:100%; max-width:360px; display:flex; flex-direction:column; gap:12px;">
+    <button class="btn btn-verde" style="padding:16px; font-size:16px;" onclick="entrarFundo('arato1')">🌱 Fundo Arato 1</button>
+    <button class="btn btn-verde" style="padding:16px; font-size:16px;" onclick="entrarFundo('arato2')">🌱 Fundo Arato 2</button>
+    <button class="btn btn-azul" style="padding:16px; font-size:16px;" onclick="abrirCombinado()">🌐 Fundo Arato — Todos</button>
+    <button class="btn btn-gris" style="padding:16px; font-size:16px;" onclick="abrirIngresoPrincipal()">📥 Ingreso de materiales</button>
+    <button class="btn btn-naranja" style="padding:16px; font-size:16px;" onclick="abrirPrestamos()">🤝 Préstamos</button>
+  </div>
+</div>
+
+<!-- ===================== VISTA COMBINADA (AMBOS FUNDOS) ===================== -->
+<div id="pantallaCombinado" style="display:none;">
+  <header>
+    <button class="close-x" style="float:left; color:#fff; font-size:20px;" onclick="volverASelector()">←</button>
+    <h1 style="text-align:center;">🌐 Fundo Arato — Todos</h1>
+    <div class="sub" style="text-align:center;">Vista combinada de Arato 1 y Arato 2</div>
+  </header>
+
+  <nav id="tabsCombinado">
+    <button data-tab="despachos" class="active">Despachos</button>
+    <button data-tab="stock">Stock</button>
+  </nav>
+
+  <main>
+    <section id="tab-combo-despachos">
+      <div class="card">
+        <h2>Consultar despachos por grupo (ambos fundos)</h2>
+        <div id="comboEstado" class="empty" style="display:none;"></div>
+        <label>Selecciona un grupo</label>
+        <select id="comboGrupoSelect">
+          <option value="">-- Selecciona un grupo --</option>
+        </select>
+        <label>Fecha (opcional, para ver una fecha exacta)</label>
+        <div class="row-flex">
+          <input type="date" id="comboFecha" style="flex:1;">
+          <button type="button" class="btn btn-gris" style="flex:0 0 auto;" onclick="limpiarFechaCombinado()">Ver todas las fechas</button>
+        </div>
+        <button type="button" class="btn btn-gris btn-full" style="margin-top:8px;" onclick="cargarDatosCombinados()">🔄 Actualizar datos</button>
+
+        <div id="comboCaptura" style="margin-top:14px; background:#fff;">
+          <div id="comboTitulo" style="display:none; padding:6px 2px 10px; font-weight:700; color:var(--verde-d);"></div>
+          <div id="comboDetalle">
+            <div class="empty">Selecciona un grupo para ver qué se le entregó, en qué fundo, fecha y quién lo entregó.</div>
+          </div>
+        </div>
+
+        <button class="btn btn-verde btn-full" style="margin-top:12px;" id="btnComboWhatsapp" onclick="enviarCombinadoComoImagen()" disabled>📤 Enviar como imagen a WhatsApp</button>
+      </div>
+    </section>
+
+    <!-- ===================== STOCK TOTAL (GENERAL: ARATO 1 + ARATO 2) ===================== -->
+    <section id="tab-combo-stock" style="display:none;">
+      <div class="stat-row">
+        <div class="stat"><div class="num" id="statTotalItems">0</div><div class="lbl">Ítems</div></div>
+        <div class="stat"><div class="num" id="statOperativos">0</div><div class="lbl">Operativos</div></div>
+        <div class="stat"><div class="num" id="statBajo">0</div><div class="lbl">Stock bajo</div></div>
+      </div>
+      <div class="card">
+        <div class="empty" style="text-align:left; font-style:normal; padding:0 0 10px;">📊 Stock total actual: ya considera lo ingresado, menos lo despachado a los grupos y lo prestado, más lo devuelto por internamiento.</div>
+        <div class="search-box">
+          <input type="text" id="buscarStock" placeholder="🔍 Buscar producto...">
+        </div>
+        <div class="toolbar">
+          <button class="btn btn-verde" onclick="descargarStockExcel()">⭳ Descargar Excel editable</button>
+          <button class="btn btn-gris" onclick="exportarBackup()">⭳ Backup</button>
+          <button class="btn btn-gris" onclick="restablecerStockCatalogo()">🔄 Actualizar al catálogo</button>
+        </div>
+        <div style="max-height:520px; overflow-y:auto;">
+          <table>
+            <thead><tr><th>Producto</th><th>Und</th><th>Cant.</th><th>Estado</th><th></th></tr></thead>
+            <tbody id="tablaStock"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ===================== INGRESO DE MATERIALES (4ta opción, elige fundo) ===================== -->
+<div id="pantallaIngreso" style="display:none;">
+  <header>
+    <button class="close-x" style="float:left; color:#fff; font-size:20px;" onclick="volverASelector()">←</button>
+    <h1 style="text-align:center;">📥 Ingreso de materiales</h1>
+    <div class="sub" style="text-align:center;" id="ingresoFundoSub">Stock general (Arato 1 y Arato 2)</div>
+  </header>
+  <main>
+    <div id="ingresoContenido" style="display:none;">
+      <div class="card">
+        <h2>Ingreso de materiales a stock</h2>
+        <label>Producto existente</label>
+        <div class="row-flex" style="align-items:stretch;">
+          <input type="text" id="buscarProductoIngreso" list="listaProductosIngreso" placeholder="Buscar producto..." style="flex:1;">
+          <button type="button" class="btn btn-gris" style="flex:0 0 auto;" onclick="abrirBuscadorStock('ingreso')">🔍 Ver stock</button>
+        </div>
+        <datalist id="listaProductosIngreso"></datalist>
+
+        <label>Cantidad a ingresar</label>
+        <input type="number" id="cantidadIngreso" min="1" value="1">
+
+        <label>Fecha</label>
+        <input type="date" id="fechaIngreso">
+
+        <label>Observación (opcional)</label>
+        <input type="text" id="obsIngreso" placeholder="Ej: compra, devolución, etc.">
+
+        <button class="btn btn-verde btn-full" style="margin-top:12px;" onclick="registrarIngreso()">↑ Ingresar a stock</button>
+      </div>
+
+      <div class="card">
+        <h2>Registrar producto nuevo</h2>
+        <label>Descripción</label>
+        <input type="text" id="nuevoDescIngreso" placeholder="Nombre del producto">
+        <div class="row-flex">
+          <div>
+            <label>Unidad</label>
+            <input type="text" id="nuevoUndIngreso" placeholder="UND, PAR, KG...">
+          </div>
+          <div>
+            <label>Cantidad inicial</label>
+            <input type="number" id="nuevoCantIngreso" min="0" value="0">
+          </div>
+        </div>
+        <label>Estado</label>
+        <select id="nuevoEstadoIngreso">
+          <option value="OPERATIVO">OPERATIVO</option>
+          <option value="INOPERATIVO">INOPERATIVO</option>
+        </select>
+        <button class="btn btn-azul btn-full" style="margin-top:12px;" onclick="registrarNuevoProducto()">+ Crear producto</button>
+      </div>
+
+      <div class="card">
+        <h2>Historial de ingresos</h2>
+        <div id="listaIngresos"><div class="empty">No hay ingresos registrados.</div></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ===================== PRÉSTAMOS ===================== -->
+<div id="pantallaPrestamos" style="display:none;">
+  <header>
+    <button class="close-x" style="float:left; color:#fff; font-size:20px;" onclick="volverASelector()">←</button>
+    <h1 style="text-align:center;">🤝 Préstamos</h1>
+    <div class="sub" style="text-align:center;">Stock general (Arato 1 y Arato 2)</div>
+  </header>
+
+  <nav id="tabsPrestamos">
+    <button data-tab="registrar" class="active">Registrar</button>
+    <button data-tab="historial">Historial</button>
+  </nav>
+
+  <main>
+    <!-- ===== REGISTRAR PRÉSTAMO ===== -->
+    <section id="tab-prestamo-registrar">
+      <div class="card">
+        <h2>Registrar préstamo</h2>
+        <label>Producto</label>
+        <div class="row-flex" style="align-items:stretch;">
+          <input type="text" id="buscarProductoPrestamo" list="listaProductosPrestamo" placeholder="Buscar producto..." style="flex:1;">
+          <button type="button" class="btn btn-gris" style="flex:0 0 auto;" onclick="abrirBuscadorStock('prestamo')">🔍 Ver stock</button>
+        </div>
+        <datalist id="listaProductosPrestamo"></datalist>
+        <small class="hint" id="stockDisponiblePrestamoHint"></small>
+
+        <label>Cantidad a prestar</label>
+        <input type="number" id="cantidadPrestamo" min="1" value="1">
+
+        <label>Responsable que recibe el producto</label>
+        <input type="text" id="responsablePrestamo" placeholder="Nombre del responsable">
+
+        <label>Fecha</label>
+        <input type="date" id="fechaPrestamo">
+
+        <label>Observación (opcional)</label>
+        <input type="text" id="obsPrestamo" placeholder="Ej: motivo del préstamo...">
+
+        <button class="btn btn-naranja btn-full" style="margin-top:12px;" onclick="registrarPrestamo()">🤝 Registrar préstamo</button>
+      </div>
+    </section>
+
+    <!-- ===== HISTORIAL DE PRÉSTAMOS ===== -->
+    <section id="tab-prestamo-historial" style="display:none;">
+      <div class="card">
+        <h2>Historial de préstamos</h2>
+        <div class="search-box">
+          <input type="text" id="buscarPrestamo" placeholder="🔍 Buscar por responsable o producto...">
+        </div>
+        <div id="capturaPrestamos" class="comprobante-doc">
+          <div class="comprobante-header">
+            <div class="titulos">
+              <h3>HISTORIAL DE PRÉSTAMOS</h3>
+              <div class="sub">Control de Almacén — Fundo Arato</div>
+              <div class="sub" style="margin-top:6px; font-size:12px;">🤝 Materiales prestados</div>
+            </div>
+            <div class="comprobante-grupo-badge" style="font-size:28px;">🤝</div>
+          </div>
+          <div class="comprobante-body">
+            <div class="comprobante-productos-titulo">Préstamos registrados</div>
+            <div id="listaPrestamos"><div class="empty">No hay préstamos registrados.</div></div>
+          </div>
+          <div class="comprobante-footer">Generado por el sistema de Control de Almacén</div>
+        </div>
+        <button class="btn btn-naranja btn-full" style="margin-top:12px;" id="btnPrestamoWhatsapp" onclick="enviarPrestamosComoImagen()" disabled>📤 Enviar como imagen a WhatsApp</button>
+      </div>
+    </section>
+  </main>
+</div>
+<div id="appFundo" style="display:none;">
+<header>
+  <button class="close-x" style="float:left; color:#fff; font-size:20px;" onclick="volverASelector()">←</button>
+  <h1>📦 Control de Almacén</h1>
+  <div class="sub" id="fundoSub">Fundo — Cosecha de Palto</div>
+  <div class="sub" id="syncStatus" style="margin-top:4px; cursor:pointer;" onclick="sincronizarDesdeNube(true)">☁️ Sincronizando...</div>
+</header>
+
+<nav id="tabs">
+  <button data-tab="despacho" class="active">Despacho</button>
+  <button data-tab="internamiento">Internamiento</button>
+  <button data-tab="historial">Historial</button>
+</nav>
+
+<main>
+
+  <!-- ===================== DESPACHO ===================== -->
+  <section id="tab-despacho">
+    <div class="card">
+      <h2>Nuevo despacho</h2>
+      <label>Grupo</label>
+      <div class="grupos-grid" id="gruposGrid"></div>
+      <input type="text" id="grupoManual" placeholder="Otro grupo / cuadrilla (opcional)">
+
+      <label>Fecha</label>
+      <input type="date" id="fechaDespacho">
+
+      <label>Almacenero o Encargado (opcional)</label>
+      <input type="text" id="operadorDespacho" placeholder="Nombre del almacenero o encargado">
+
+      <label>Responsable de recepción / Auxiliar responsable</label>
+      <input type="text" id="responsableRecepcionDespacho" placeholder="Nombre de quien recibe el despacho">
+
+      <hr style="border:none; border-top:1px solid #eee; margin:14px 0;">
+
+      <label>Agregar producto</label>
+      <div class="row-flex" style="align-items:stretch;">
+        <input type="text" id="buscarProductoDespacho" list="listaProductos" placeholder="Buscar producto en stock..." style="flex:1;">
+        <button type="button" class="btn btn-gris" style="flex:0 0 auto;" onclick="abrirBuscadorStock('despacho')">🔍 Ver stock</button>
+      </div>
+      <datalist id="listaProductos"></datalist>
+      <div class="row-flex" style="margin-top:8px;">
+        <div>
+          <label>Cantidad a despachar</label>
+          <input type="number" id="cantidadDespacho" min="1" value="1">
+        </div>
+        <div style="flex:0 0 auto;">
+          <label>&nbsp;</label>
+          <button class="btn btn-azul" onclick="agregarItemDespacho()">+ Agregar</button>
+        </div>
+      </div>
+      <small class="hint" id="stockDisponibleHint"></small>
+
+      <div style="margin-top:12px;" id="listaItemsDespacho"></div>
+
+      <label>Observaciones (opcional)</label>
+      <textarea id="obsDespacho" rows="2" placeholder="Notas del despacho..."></textarea>
+
+      <button class="btn btn-verde btn-full" style="margin-top:14px;" onclick="guardarDespacho()">✔ Confirmar despacho</button>
+    </div>
+
+    <div class="card">
+      <h2>Comprobante del último despacho</h2>
+      <div id="comprobanteDespachoVacio" class="empty">Confirma un despacho para generar el comprobante y poder compartirlo como evidencia.</div>
+      <div id="comprobanteDespachoContenido" style="display:none;">
+        <div id="comprobanteDespachoCaptura" class="comprobante-doc">
+          <div class="comprobante-header">
+            <div class="titulos">
+              <h3>COMPROBANTE DE DESPACHO</h3>
+              <div class="sub" id="comprobanteDespachoFundoSub">Control de Almacén — Fundo Arato</div>
+              <div class="sub" id="comprobanteDespachoFecha" style="margin-top:6px; font-size:12px;"></div>
+            </div>
+            <div class="comprobante-grupo-badge" id="comprobanteDespachoGrupoBadge">A</div>
+          </div>
+          <div class="comprobante-body">
+            <div class="comprobante-datos">
+              <div class="campo">
+                <div class="lbl">Almacenero / Encargado</div>
+                <div class="val" id="comprobanteDespachoAlmacenero">—</div>
+              </div>
+              <div class="campo">
+                <div class="lbl">Responsable de Recepción</div>
+                <div class="val" id="comprobanteDespachoResponsable">—</div>
+              </div>
+            </div>
+
+            <div class="comprobante-productos-titulo">Productos despachados</div>
+            <div id="comprobanteDespachoTabla"></div>
+
+            <div id="comprobanteDespachoObsWrap" style="display:none; margin-top:10px; font-size:13px; color:#4b5a52;">
+              📝 <span id="comprobanteDespachoObs"></span>
+            </div>
+
+            <div id="fotoEvidenciaWrap" class="comprobante-foto" style="display:none;">
+              <div style="font-size:11px; text-transform:uppercase; color:#6b7a72; margin-bottom:6px; font-weight:700;">📷 Evidencia fotográfica</div>
+              <img id="fotoEvidenciaPreview" style="max-width:100%; border-radius:8px; display:block;">
+            </div>
+          </div>
+          <div class="comprobante-footer">Generado por el sistema de Control de Almacén</div>
+        </div>
+
+        <label style="margin-top:12px;">Agregar foto de evidencia (opcional)</label>
+        <div class="row-flex">
+          <button type="button" class="btn btn-azul" onclick="document.getElementById('fotoEvidenciaCamaraInput').click()">📷 Tomar foto</button>
+          <button type="button" class="btn btn-gris" onclick="document.getElementById('fotoEvidenciaGaleriaInput').click()">🖼️ Elegir de galería</button>
+        </div>
+        <input type="file" id="fotoEvidenciaCamaraInput" accept="image/*" capture="environment" style="display:none;">
+        <input type="file" id="fotoEvidenciaGaleriaInput" accept="image/*" style="display:none;">
+        <button type="button" class="btn btn-rojo btn-sm" id="btnQuitarFotoEvidenciaDespacho" style="display:none; margin-top:8px;" onclick="quitarFotoEvidenciaDespacho()">✕ Quitar foto</button>
+
+        <button class="btn btn-verde btn-full" style="margin-top:14px;" id="btnComprobanteDespachoWhatsapp" onclick="enviarComprobanteDespachoComoImagen()">📤 Enviar como imagen a WhatsApp</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== INTERNAMIENTO / DEVOLUCIÓN ===================== -->
+  <section id="tab-internamiento" style="display:none;">
+    <div class="card">
+      <h2>Internamiento o devolución</h2>
+      <label>Grupo</label>
+      <select id="grupoInternamientoSelect">
+        <option value="">-- Selecciona un grupo --</option>
+      </select>
+
+      <div id="resumenInternamiento" style="margin-top:12px;">
+        <div class="empty">Selecciona un grupo para ver qué se le entregó y qué falta por devolver.</div>
+      </div>
+    </div>
+
+    <div class="card" id="cardFormInternamiento" style="display:none;">
+      <h2>Registrar devolución</h2>
+      <label>Producto</label>
+      <div class="row-flex" style="align-items:stretch;">
+        <input type="text" id="buscarProductoInternamiento" list="listaProductosInternamiento" placeholder="Buscar producto..." style="flex:1;">
+        <button type="button" class="btn btn-gris" style="flex:0 0 auto;" onclick="abrirBuscadorStock('internamiento')">🔍 Ver stock</button>
+      </div>
+      <datalist id="listaProductosInternamiento"></datalist>
+      <div class="row-flex" style="margin-top:8px;">
+        <div>
+          <label>Cantidad que devuelve</label>
+          <input type="number" id="cantidadInternamiento" min="1" value="1">
+        </div>
+        <div style="flex:0 0 auto;">
+          <label>&nbsp;</label>
+          <button class="btn btn-azul" onclick="agregarItemInternamiento()">+ Agregar</button>
+        </div>
+      </div>
+      <small class="hint" id="pendienteInternamientoHint"></small>
+
+      <div style="margin-top:12px;" id="listaItemsInternamiento"></div>
+
+      <label>Fecha</label>
+      <input type="date" id="fechaInternamiento">
+
+      <label>Responsable que devuelve / recibe la devolución</label>
+      <input type="text" id="responsableInternamiento" placeholder="Nombre del responsable">
+
+      <label>Observaciones (opcional)</label>
+      <textarea id="obsInternamiento" rows="2" placeholder="Notas del internamiento..."></textarea>
+
+      <button class="btn btn-verde btn-full" style="margin-top:14px;" onclick="guardarInternamiento()">✔ Confirmar internamiento</button>
+    </div>
+
+    <div class="card">
+      <h2>Resumen para compartir (varios grupos)</h2>
+      <label>Selecciona uno o más grupos</label>
+      <div class="grupos-grid" id="gruposResumenGrid"></div>
+      <button type="button" class="btn btn-gris btn-full" style="margin-top:8px;" onclick="limpiarGruposResumen()">Limpiar selección</button>
+
+      <div id="resumenMultiGrupoCaptura" style="margin-top:14px; background:#fff;">
+        <div id="resumenMultiGrupoTitulo" style="display:none; padding:6px 2px 10px; font-weight:700; color:var(--verde-d);"></div>
+        <div id="resumenMultiGrupoDetalle">
+          <div class="empty">Selecciona uno o más grupos para ver producto, despachado, devuelto y faltante.</div>
+        </div>
+      </div>
+
+      <button class="btn btn-verde btn-full" style="margin-top:12px;" id="btnResumenMultiWhatsapp" onclick="enviarResumenMultiGrupoComoImagen()" disabled>📤 Enviar como imagen a WhatsApp</button>
+    </div>
+  </section>
+
+  <!-- ===================== HISTORIAL ===================== -->
+  <section id="tab-historial" style="display:none;">
+    <div class="card">
+      <h2>Consultar despachos por grupo o fecha</h2>
+      <label>Grupo (opcional si buscas por fecha)</label>
+      <select id="grupoHistorialSelect">
+        <option value="">-- Todos los grupos --</option>
+      </select>
+
+      <label>Fecha (opcional si buscas por grupo)</label>
+      <div class="row-flex">
+        <input type="date" id="fechaHistorialSelect" style="flex:1;">
+        <button type="button" class="btn btn-gris" style="flex:0 0 auto;" onclick="limpiarFechaHistorial()">Ver todas las fechas</button>
+      </div>
+
+      <div id="capturaHistorial" style="margin-top:14px; background:#fff;">
+        <div id="capturaHistorialTitulo" style="display:none; padding:6px 2px 10px; font-weight:700; color:var(--verde-d);"></div>
+        <div id="detalleGrupoHistorial">
+          <div class="empty">Selecciona un grupo y/o una fecha para ver qué productos se entregaron, a quién y quién los entregó.</div>
+        </div>
+      </div>
+
+      <button class="btn btn-verde btn-full" style="margin-top:12px;" id="btnEnviarWhatsapp" onclick="enviarHistorialComoImagen()" disabled>📤 Enviar como imagen a WhatsApp</button>
+    </div>
+  </section>
+
+
+</main>
+
+</div>
+<!-- fin #appFundo -->
+
+<!-- ===== Modales y toast (globales, compartidos por todas las pantallas) ===== -->
+<!-- ===== Modal editar item de stock ===== -->
+<div class="modal-bg" id="modalItem">
+  <div class="modal">
+    <button class="close-x" onclick="cerrarModal('modalItem')">×</button>
+    <h3 id="modalItemTitulo">Editar producto</h3>
+    <input type="hidden" id="editId">
+    <label>Descripción</label>
+    <input type="text" id="editDesc">
+    <div class="row-flex">
+      <div>
+        <label>Unidad</label>
+        <input type="text" id="editUnd">
+      </div>
+      <div>
+        <label>Cantidad</label>
+        <input type="number" id="editCant">
+      </div>
+    </div>
+    <label>Estado</label>
+    <select id="editEstado">
+      <option value="OPERATIVO">OPERATIVO</option>
+      <option value="INOPERATIVO">INOPERATIVO</option>
+    </select>
+    <label>Observaciones</label>
+    <input type="text" id="editObs">
+    <div class="modal-actions">
+      <button class="btn btn-rojo" onclick="eliminarItemActual()">Eliminar</button>
+      <button class="btn btn-verde" onclick="guardarItemEditado()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal editar despacho ===== -->
+<div class="modal-bg" id="modalDespacho">
+  <div class="modal">
+    <button class="close-x" onclick="cerrarModal('modalDespacho')">×</button>
+    <h3>Editar despacho</h3>
+    <input type="hidden" id="editDespachoId">
+    <label>Grupo / Módulo</label>
+    <input type="text" id="editDespachoGrupo">
+    <label>Fecha</label>
+    <input type="date" id="editDespachoFecha">
+    <label>Almacenero o Encargado</label>
+    <input type="text" id="editDespachoOperador">
+    <label>Responsable de recepción / Auxiliar responsable</label>
+    <input type="text" id="editDespachoResponsableRecepcion">
+    <label>Productos</label>
+    <div id="editDespachoItems"></div>
+    <label>Observaciones</label>
+    <textarea id="editDespachoObs" rows="2"></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-rojo" onclick="eliminarDespachoActual()">Eliminar despacho</button>
+      <button class="btn btn-verde" onclick="guardarDespachoEditado()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal buscar / ver stock ===== -->
+<div class="modal-bg" id="modalBuscarStock">
+  <div class="modal">
+    <button class="close-x" onclick="cerrarModal('modalBuscarStock')">×</button>
+    <h3>Buscar en mi stock</h3>
+    <input type="text" id="buscarEnModalStock" placeholder="🔍 Escribe para filtrar...">
+    <div style="max-height:60vh; overflow-y:auto; margin-top:10px;" id="listaModalStock"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   SINCRONIZACIÓN CON GOOGLE SHEETS (Apps Script)
+=============================================================*/
+// 1) Pega aquí la URL de tu Web App de Apps Script (termina en /exec)
+const SYNC_URL = "PEGA_AQUI_TU_URL_DE_APPS_SCRIPT";
+// 2) Debe coincidir exactamente con el TOKEN definido en Code.gs
+const SYNC_TOKEN = "ARATO2026ALMACEN";
+const LS_LAST_SYNC = 'almacen_last_sync_v1';
+const LS_DEVICE_ID = 'almacen_device_id_v1';
+let FUNDO_ACTUAL = null;
+const NOMBRES_FUNDO = { arato1: 'Arato 1', arato2: 'Arato 2' };
+// El stock y los ingresos son GENERALES (compartidos entre Arato 1 y Arato 2).
+// Solo los despachos se registran por fundo, porque cada fundo entrega a sus propias cuadrillas.
+const FUNDO_GENERAL = 'general';
+
+function claveFundo(base){
+  return base + '_' + FUNDO_ACTUAL;
+}
+function claveGeneral(base){
+  return base + '_' + FUNDO_GENERAL;
+}
+
+function idDispositivo(){
+  let id = localStorage.getItem(LS_DEVICE_ID);
+  if(!id){
+    id = 'disp-' + Math.random().toString(36).slice(2,8);
+    localStorage.setItem(LS_DEVICE_ID, id);
+  }
+  return id;
+}
+
+function mostrarEstadoSync(texto){
+  const el = document.getElementById('syncStatus');
+  if(el) el.textContent = texto;
+}
+
+function estadoStockParaSubir(){
+  return { stock, ingresos, prestamos, nextItemId, nextIngresoId, nextPrestamoId };
+}
+function estadoDespachosParaSubir(){
+  return { despachos, internamientos, nextDespachoId, nextInternamientoId };
+}
+
+function aplicarEstadoStockRemoto(estado){
+  if(!estado) return;
+  stock = estado.stock || stock;
+  ingresos = estado.ingresos || ingresos;
+  prestamos = estado.prestamos || prestamos;
+  nextItemId = estado.nextItemId ?? nextItemId;
+  nextIngresoId = estado.nextIngresoId ?? nextIngresoId;
+  nextPrestamoId = estado.nextPrestamoId ?? nextPrestamoId;
+  _aplicandoRemoto = true;
+  persistirStock();
+  _aplicandoRemoto = false;
+  renderStock();
+  renderIngresos();
+  if(typeof renderHistorialPrestamos==='function') renderHistorialPrestamos();
+  if(typeof renderDatalistProductos==='function') renderDatalistProductos();
+  if(typeof renderDatalistProductosIngreso==='function') renderDatalistProductosIngreso();
+  if(typeof renderDatalistProductosPrestamo==='function') renderDatalistProductosPrestamo();
+}
+
+function aplicarEstadoDespachosRemoto(estado){
+  if(!estado) return;
+  despachos = estado.despachos || despachos;
+  internamientos = estado.internamientos || internamientos;
+  nextDespachoId = estado.nextDespachoId ?? nextDespachoId;
+  nextInternamientoId = estado.nextInternamientoId ?? nextInternamientoId;
+  _aplicandoRemoto = true;
+  persistirDespachos();
+  _aplicandoRemoto = false;
+  if(typeof renderGruposGrid==='function') renderGruposGrid();
+  if(typeof poblarGruposHistorial==='function') poblarGruposHistorial();
+  if(typeof poblarGruposInternamiento==='function') poblarGruposInternamiento();
+  if(typeof renderResumenInternamiento==='function') renderResumenInternamiento();
+}
+
+// Sincroniza el STOCK e INGRESOS (general, compartido entre ambos fundos)
+async function sincronizarStockDesdeNube(manual){
+  if(!SYNC_URL || SYNC_URL.indexOf('PEGA_AQUI')===0){
+    mostrarEstadoSync('☁️ Sin configurar');
+    return;
+  }
+  mostrarEstadoSync('☁️ Sincronizando...');
+  try{
+    const res = await fetch(`${SYNC_URL}?token=${encodeURIComponent(SYNC_TOKEN)}&fundo=${FUNDO_GENERAL}`);
+    const data = await res.json();
+    if(!data.ok){ mostrarEstadoSync('⚠️ ' + (data.error||'Error')); return; }
+    const remotoTs = data.actualizado ? new Date(data.actualizado).getTime() : 0;
+    const localTs = Number(localStorage.getItem(claveGeneral(LS_LAST_SYNC)) || 0);
+    if(data.estado && (manual || remotoTs > localTs)){
+      aplicarEstadoStockRemoto(data.estado);
+      localStorage.setItem(claveGeneral(LS_LAST_SYNC), String(remotoTs));
+      mostrarEstadoSync('☁️ Sincronizado ✓');
+    } else if(!data.estado){
+      await subirStockANube();
+    } else {
+      mostrarEstadoSync('☁️ Sincronizado ✓');
+    }
+  }catch(err){
+    mostrarEstadoSync('⚠️ Sin conexión');
+  }
+}
+
+// Sincroniza los DESPACHOS (propios de cada fundo)
+async function sincronizarDespachosDesdeNube(manual){
+  if(!SYNC_URL || SYNC_URL.indexOf('PEGA_AQUI')===0) return;
+  if(!FUNDO_ACTUAL) return;
+  try{
+    const res = await fetch(`${SYNC_URL}?token=${encodeURIComponent(SYNC_TOKEN)}&fundo=${FUNDO_ACTUAL}`);
+    const data = await res.json();
+    if(!data.ok) return;
+    const remotoTs = data.actualizado ? new Date(data.actualizado).getTime() : 0;
+    const localTs = Number(localStorage.getItem(claveFundo(LS_LAST_SYNC)) || 0);
+    if(data.estado && (manual || remotoTs > localTs)){
+      aplicarEstadoDespachosRemoto(data.estado);
+      localStorage.setItem(claveFundo(LS_LAST_SYNC), String(remotoTs));
+    } else if(!data.estado){
+      await subirDespachosANube();
+    }
+  }catch(err){ /* sin conexión: se reintentará en la próxima sincronización */ }
+}
+
+// Mantiene compatibilidad: sincroniza stock general + despachos del fundo actual
+async function sincronizarDesdeNube(manual){
+  await sincronizarStockDesdeNube(manual);
+  await sincronizarDespachosDesdeNube(manual);
+}
+
+let subidaStockPendiente = null;
+function programarSubidaStock(){
+  if(subidaStockPendiente) clearTimeout(subidaStockPendiente);
+  mostrarEstadoSync('☁️ Guardando...');
+  subidaStockPendiente = setTimeout(subirStockANube, 900);
+}
+
+let subidaDespachosPendiente = null;
+function programarSubidaDespachos(){
+  if(!FUNDO_ACTUAL) return;
+  if(subidaDespachosPendiente) clearTimeout(subidaDespachosPendiente);
+  subidaDespachosPendiente = setTimeout(subirDespachosANube, 900);
+}
+
+async function subirStockANube(){
+  if(!SYNC_URL || SYNC_URL.indexOf('PEGA_AQUI')===0) return;
+  try{
+    const res = await fetch(SYNC_URL, {
+      method:'POST',
+      body: JSON.stringify({
+        token: SYNC_TOKEN,
+        dispositivo: idDispositivo(),
+        fundo: FUNDO_GENERAL,
+        estado: estadoStockParaSubir()
+      })
+    });
+    const data = await res.json();
+    if(data.ok){
+      localStorage.setItem(claveGeneral(LS_LAST_SYNC), String(new Date(data.actualizado).getTime()));
+      mostrarEstadoSync('☁️ Sincronizado ✓');
+    } else {
+      mostrarEstadoSync('⚠️ ' + (data.error||'Error al guardar'));
+    }
+  }catch(err){
+    mostrarEstadoSync('⚠️ Sin conexión');
+  }
+}
+
+async function subirDespachosANube(){
+  if(!SYNC_URL || SYNC_URL.indexOf('PEGA_AQUI')===0) return;
+  if(!FUNDO_ACTUAL) return;
+  try{
+    const res = await fetch(SYNC_URL, {
+      method:'POST',
+      body: JSON.stringify({
+        token: SYNC_TOKEN,
+        dispositivo: idDispositivo(),
+        fundo: FUNDO_ACTUAL,
+        estado: estadoDespachosParaSubir()
+      })
+    });
+    const data = await res.json();
+    if(data.ok){
+      localStorage.setItem(claveFundo(LS_LAST_SYNC), String(new Date(data.actualizado).getTime()));
+    }
+  }catch(err){ /* sin conexión: se reintentará en la próxima sincronización */ }
+}
+
+/* ============================================================
+   NAVEGACIÓN: SELECTOR DE FUNDO / APP / VISTA COMBINADA
+=============================================================*/
+function entrarFundo(fundo){
+  FUNDO_ACTUAL = fundo;
+  document.getElementById('pantallaSelector').style.display = 'none';
+  document.getElementById('pantallaCombinado').style.display = 'none';
+  document.getElementById('pantallaPrestamos').style.display = 'none';
+  document.getElementById('appFundo').style.display = '';
+  document.getElementById('fundoSub').textContent = 'Fundo — ' + NOMBRES_FUNDO[fundo];
+
+  cargarStockGeneral();
+  cargarDespachosFundo();
+
+  renderIngresos();
+  renderGruposGrid();
+  renderItemsDespachoTemp();
+  renderDatalistProductos();
+  if(typeof renderDatalistProductosIngreso==='function') renderDatalistProductosIngreso();
+  document.getElementById('fechaDespacho').value = hoyISO();
+  document.getElementById('grupoManual').value = '';
+  grupoSeleccionado = null;
+  ultimoDespachoGuardado = null;
+  quitarFotoEvidenciaDespacho();
+  renderComprobanteDespacho();
+
+  itemsInternamientoTemp = [];
+  document.getElementById('fechaInternamiento').value = hoyISO();
+  poblarGruposInternamiento();
+  renderDatalistProductosInternamiento();
+  renderItemsInternamientoTemp();
+  renderResumenInternamiento();
+  gruposResumenSeleccionados = [];
+  poblarGruposResumen();
+  renderResumenMultiGrupo();
+
+  // Volver a mostrar la pestaña Despacho por defecto
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.remove('active'));
+  document.querySelector('#tabs button[data-tab="despacho"]').classList.add('active');
+  ['despacho','internamiento','historial'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display = (t==='despacho') ? '' : 'none';
+  });
+
+  sincronizarStockDesdeNube(false);
+  sincronizarDespachosDesdeNube(false);
+}
+
+function volverASelector(){
+  document.getElementById('appFundo').style.display = 'none';
+  document.getElementById('pantallaCombinado').style.display = 'none';
+  document.getElementById('pantallaIngreso').style.display = 'none';
+  document.getElementById('pantallaPrestamos').style.display = 'none';
+  document.getElementById('pantallaSelector').style.display = '';
+}
+
+/* --- Ingreso de materiales (el stock es general: no se pregunta el fundo) --- */
+function abrirIngresoPrincipal(){
+  document.getElementById('pantallaSelector').style.display = 'none';
+  document.getElementById('pantallaCombinado').style.display = 'none';
+  document.getElementById('appFundo').style.display = 'none';
+  document.getElementById('pantallaPrestamos').style.display = 'none';
+  document.getElementById('pantallaIngreso').style.display = '';
+  document.getElementById('ingresoFundoSub').textContent = 'Stock general (Arato 1 y Arato 2)';
+  document.getElementById('ingresoContenido').style.display = '';
+
+  cargarStockGeneral();
+  document.getElementById('fechaIngreso').value = hoyISO();
+  renderDatalistProductosIngreso();
+  renderIngresos();
+  sincronizarStockDesdeNube(false);
+}
+
+/* --- Préstamos (usa el stock general: no se pregunta el fundo) --- */
+function abrirPrestamos(){
+  document.getElementById('pantallaSelector').style.display = 'none';
+  document.getElementById('pantallaCombinado').style.display = 'none';
+  document.getElementById('appFundo').style.display = 'none';
+  document.getElementById('pantallaIngreso').style.display = 'none';
+  document.getElementById('pantallaPrestamos').style.display = '';
+
+  cargarStockGeneral();
+  document.getElementById('fechaPrestamo').value = hoyISO();
+  document.querySelectorAll('#tabsPrestamos button').forEach(b=>b.classList.remove('active'));
+  document.querySelector('#tabsPrestamos button[data-tab="registrar"]').classList.add('active');
+  document.getElementById('tab-prestamo-registrar').style.display = '';
+  document.getElementById('tab-prestamo-historial').style.display = 'none';
+  renderDatalistProductosPrestamo();
+  renderHistorialPrestamos();
+  sincronizarStockDesdeNube(false);
+}
+document.getElementById('tabsPrestamos').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-tab]');
+  if(!btn) return;
+  document.querySelectorAll('#tabsPrestamos button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  ['registrar','historial'].forEach(t=>{
+    document.getElementById('tab-prestamo-'+t).style.display = (t===btn.dataset.tab) ? '' : 'none';
+  });
+  if(btn.dataset.tab==='historial') renderHistorialPrestamos();
+  if(btn.dataset.tab==='registrar') renderDatalistProductosPrestamo();
+});
+
+/* --- Vista combinada (ambos fundos) --- */
+let combinadoData = { arato1: null, arato2: null };
+
+function abrirCombinado(){
+  document.getElementById('pantallaSelector').style.display = 'none';
+  document.getElementById('appFundo').style.display = 'none';
+  document.getElementById('pantallaPrestamos').style.display = 'none';
+  document.getElementById('pantallaCombinado').style.display = '';
+
+  document.querySelectorAll('#tabsCombinado button').forEach(b=>b.classList.remove('active'));
+  document.querySelector('#tabsCombinado button[data-tab="despachos"]').classList.add('active');
+  document.getElementById('tab-combo-despachos').style.display = '';
+  document.getElementById('tab-combo-stock').style.display = 'none';
+
+  cargarDatosCombinados();
+}
+
+async function cargarDatosCombinados(){
+  const estadoEl = document.getElementById('comboEstado');
+  if(!SYNC_URL || SYNC_URL.indexOf('PEGA_AQUI')===0){
+    estadoEl.style.display = '';
+    estadoEl.textContent = 'Sincronización no configurada. Configura SYNC_URL para usar esta vista.';
+    return;
+  }
+  estadoEl.style.display = '';
+  estadoEl.textContent = 'Cargando datos de Arato 1 y Arato 2...';
+  try{
+    const [r1, r2] = await Promise.all([
+      fetch(`${SYNC_URL}?token=${encodeURIComponent(SYNC_TOKEN)}&fundo=arato1`).then(r=>r.json()),
+      fetch(`${SYNC_URL}?token=${encodeURIComponent(SYNC_TOKEN)}&fundo=arato2`).then(r=>r.json())
+    ]);
+    combinadoData.arato1 = (r1 && r1.ok && r1.estado) ? r1.estado : { despachos: [] };
+    combinadoData.arato2 = (r2 && r2.ok && r2.estado) ? r2.estado : { despachos: [] };
+    estadoEl.style.display = 'none';
+    poblarGruposCombinado();
+    renderDetalleCombinado();
+  }catch(err){
+    estadoEl.style.display = '';
+    estadoEl.textContent = 'Sin conexión. No se pudieron cargar los datos de los fundos.';
+  }
+}
+
+function despachosCombinados(){
+  const d1 = ((combinadoData.arato1 && combinadoData.arato1.despachos) || []).map(d=>({...d, _fundo:'ARATO 1'}));
+  const d2 = ((combinadoData.arato2 && combinadoData.arato2.despachos) || []).map(d=>({...d, _fundo:'ARATO 2'}));
+  return [...d1, ...d2];
+}
+
+function poblarGruposCombinado(){
+  const grupos = [...new Set(despachosCombinados().map(d=>d.grupo))].sort();
+  const sel = document.getElementById('comboGrupoSelect');
+  const previo = sel.value;
+  sel.innerHTML = '<option value="">-- Selecciona un grupo --</option>' + grupos.map(g=>`<option value="${g}">Grupo ${g}</option>`).join('');
+  if(grupos.includes(previo)) sel.value = previo;
+}
+
+function limpiarFechaCombinado(){
+  document.getElementById('comboFecha').value = '';
+  renderDetalleCombinado();
+}
+
+function renderDetalleCombinado(){
+  const g = document.getElementById('comboGrupoSelect').value;
+  const fecha = document.getElementById('comboFecha').value;
+  const cont = document.getElementById('comboDetalle');
+  const tituloCont = document.getElementById('comboTitulo');
+  const btnWpp = document.getElementById('btnComboWhatsapp');
+  tituloCont.style.display = 'none';
+
+  if(!g){
+    cont.innerHTML = '<div class="empty">Selecciona un grupo para ver qué se le entregó, en qué fundo, fecha y quién lo entregó.</div>';
+    btnWpp.disabled = true;
+    return;
+  }
+
+  const despachosGrupo = despachosCombinados().filter(d=> d.grupo===g && (!fecha || d.fecha===fecha));
+  const filas = [];
+  despachosGrupo.forEach(d=>{
+    (d.items||[]).forEach(it=>{
+      filas.push({ fundo:d._fundo, producto:it.descripcion, unidad:it.unidad, cantidad:it.cantidad, fecha:d.fecha, almacenero:d.operador||'—', recepcion:d.responsableRecepcion||'—' });
+    });
+  });
+
+  const subFecha = fecha ? fmtFecha(fecha) : 'Todas las fechas';
+
+  if(filas.length===0){
+    cont.innerHTML = `
+      <div class="comprobante-doc">
+        <div class="comprobante-header">
+          <div class="titulos">
+            <h3>DESPACHOS POR GRUPO</h3>
+            <div class="sub">Fundo Arato — Todos (Arato 1 y Arato 2)</div>
+            <div class="sub" style="margin-top:6px; font-size:12px;">📅 ${subFecha}</div>
+          </div>
+          <div class="comprobante-grupo-badge">${g}</div>
+        </div>
+        <div class="comprobante-body">
+          <div class="empty">No se registran despachos para este grupo${fecha? ' en la fecha seleccionada.' : ' en ningún fundo.'}</div>
+        </div>
+        <div class="comprobante-footer">Generado por el sistema de Control de Almacén</div>
+      </div>
+    `;
+    btnWpp.disabled = true;
+    return;
+  }
+
+  filas.sort((a,b)=> b.fecha.localeCompare(a.fecha) || a.fundo.localeCompare(b.fundo) || a.producto.localeCompare(b.producto));
+  cont.innerHTML = `
+    <div class="comprobante-doc">
+      <div class="comprobante-header">
+        <div class="titulos">
+          <h3>DESPACHOS POR GRUPO</h3>
+          <div class="sub">Fundo Arato — Todos (Arato 1 y Arato 2)</div>
+          <div class="sub" style="margin-top:6px; font-size:12px;">📅 ${subFecha}</div>
+        </div>
+        <div class="comprobante-grupo-badge">${g}</div>
+      </div>
+      <div class="comprobante-body">
+        <div class="comprobante-productos-titulo">Productos entregados</div>
+        <table>
+          <thead><tr><th>Fundo</th><th>Producto</th><th>Cant.</th><th>Fecha</th><th>Almacenero</th><th>Recepción</th></tr></thead>
+          <tbody>
+            ${filas.map(f=>`<tr>
+              <td>${f.fundo}</td>
+              <td>${f.producto}</td>
+              <td>${f.cantidad} ${f.unidad}</td>
+              <td>${fmtFecha(f.fecha)}</td>
+              <td>${f.almacenero}</td>
+              <td>${f.recepcion}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="comprobante-footer">Generado por el sistema de Control de Almacén</div>
+    </div>
+  `;
+  btnWpp.disabled = false;
+}
+
+document.getElementById('comboGrupoSelect').addEventListener('change', renderDetalleCombinado);
+document.getElementById('comboFecha').addEventListener('change', renderDetalleCombinado);
+
+function enviarCombinadoComoImagen(){
+  if(typeof html2canvas==='undefined'){
+    alert('No se pudo cargar la herramienta de imagen (revisa tu conexión)');
+    return;
+  }
+  const el = document.getElementById('comboCaptura');
+  html2canvas(el, {backgroundColor:'#ffffff', scale:2}).then(canvas=>{
+    canvas.toBlob(async (blob)=>{
+      if(!blob) return;
+      const nombreArchivo = 'arato_todos_'+document.getElementById('comboGrupoSelect').value+'_'+hoyISO()+'.png';
+      const file = new File([blob], nombreArchivo, {type:'image/png'});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        try{
+          await navigator.share({files:[file], title:'Despacho — Fundo Arato (todos)', text:'Detalle de despacho combinado'});
+          return;
+        }catch(err){}
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = nombreArchivo; a.click();
+      URL.revokeObjectURL(url);
+      window.open('https://wa.me/?text=' + encodeURIComponent('Detalle de despacho combinado adjunto (imagen guardada en el dispositivo).'), '_blank');
+    }, 'image/png');
+  });
+}
+
+/* ============================================================
+   DATOS INICIALES DE STOCK (cargados desde el Excel del usuario)
+   Solo se usan la primera vez; luego todo se guarda en localStorage.
+=============================================================*/
+const STOCK_INICIAL = [{"id": 1, "descripcion": "PERDIGAS", "unidad": "UND", "cantidad": 255, "estado": "OPERATIVO", "obs": ""}, {"id": 2, "descripcion": "BALDES BLANCOS", "unidad": "UND", "cantidad": 1880, "estado": "OPERATIVO", "obs": ""}, {"id": 3, "descripcion": "TIJERAS ARS", "unidad": "UND", "cantidad": 159, "estado": "OPERATIVO", "obs": ""}, {"id": 4, "descripcion": "CINTURONES DE POCICIONSMIENTO ANARANJADOS", "unidad": "UND", "cantidad": 181, "estado": "OPERATIVO", "obs": ""}, {"id": 5, "descripcion": "CINTURONES DE POCICIONSMIENTO AMARILLOS", "unidad": "UND", "cantidad": 28, "estado": "OPERATIVO", "obs": ""}, {"id": 6, "descripcion": "TIJERAS TELESCOPICAS", "unidad": "UND", "cantidad": 59, "estado": "OPERATIVO", "obs": ""}, {"id": 7, "descripcion": "MORRALES", "unidad": "UND", "cantidad": 59, "estado": "OPERATIVO", "obs": ""}, {"id": 8, "descripcion": "TAMALES DE TUBOS", "unidad": "UND", "cantidad": 175, "estado": "OPERATIVO", "obs": ""}, {"id": 9, "descripcion": "PORTA TIJERAS DE TELA", "unidad": "UND", "cantidad": 43, "estado": "OPERATIVO", "obs": ""}, {"id": 10, "descripcion": "BOTELLAS DE HIPOCLORITO", "unidad": "UND", "cantidad": 133, "estado": "OPERATIVO", "obs": ""}, {"id": 11, "descripcion": "FRENELAS MICROFIBRA", "unidad": "UND", "cantidad": 100, "estado": "OPERATIVO", "obs": ""}, {"id": 12, "descripcion": "CHALECOS ANARANJADOS", "unidad": "UND", "cantidad": 89, "estado": "OPERATIVO", "obs": ""}, {"id": 13, "descripcion": "ALMUADAS DE JABA BASE", "unidad": "UND", "cantidad": 140, "estado": "OPERATIVO", "obs": ""}, {"id": 14, "descripcion": "BANCOS ARAÑA", "unidad": "UND", "cantidad": 54, "estado": "OPERATIVO", "obs": ""}, {"id": 15, "descripcion": "BOLSAS DE PERDIGAS 2DO USO", "unidad": "UND", "cantidad": 152, "estado": "OPERATIVO", "obs": ""}, {"id": 16, "descripcion": "CODERAS NEGRAS", "unidad": "UND", "cantidad": 150, "estado": "OPERATIVO", "obs": ""}, {"id": 17, "descripcion": "MIO PIO DE COLCHONETA NEGRA", "unidad": "UND", "cantidad": 61, "estado": "OPERATIVO", "obs": ""}, {"id": 18, "descripcion": "COLCHONETAS NEGRAS", "unidad": "UND", "cantidad": 86, "estado": "OPERATIVO", "obs": ""}, {"id": 19, "descripcion": "MAYAS TAPA BIN", "unidad": "UND", "cantidad": 150, "estado": "INOPERATIVO", "obs": ""}, {"id": 20, "descripcion": "MAYAS TAPA BIN", "unidad": "UND", "cantidad": 615, "estado": "OPERATIVO", "obs": ""}, {"id": 21, "descripcion": "CAPUCHONES NEGROS DE MAYA", "unidad": "UND", "cantidad": 30, "estado": "OPERATIVO", "obs": ""}, {"id": 22, "descripcion": "MALETAS DE HERRAMIENTAS", "unidad": "UND", "cantidad": 9, "estado": "OPERATIVO", "obs": ""}, {"id": 23, "descripcion": "TIJERAS TELESCOPICAS", "unidad": "UND", "cantidad": 97, "estado": "INOPERATIVO", "obs": ""}, {"id": 24, "descripcion": "SOMBRILLAS BLANCAS 2D0 USO", "unidad": "UND", "cantidad": 61, "estado": "OPERATIVO", "obs": ""}, {"id": 25, "descripcion": "ESCOBILLONES VERDES", "unidad": "UND", "cantidad": 11, "estado": "OPERATIVO", "obs": ""}, {"id": 26, "descripcion": "ESPONJAS CARMELITAS", "unidad": "UND", "cantidad": 90, "estado": "OPERATIVO", "obs": ""}, {"id": 27, "descripcion": "CERRUCHOS PLOMOS", "unidad": "UND", "cantidad": 85, "estado": "OPERATIVO", "obs": ""}, {"id": 28, "descripcion": "RAFIA NEGRA", "unidad": "RLL", "cantidad": 7, "estado": "OPERATIVO", "obs": ""}, {"id": 29, "descripcion": "GENERADOR HONDA", "unidad": "UND", "cantidad": 1, "estado": "INOPERATIVO", "obs": ""}, {"id": 30, "descripcion": "TJERAS ARS 2DO USO", "unidad": "UND", "cantidad": 112, "estado": "OPERATIVO", "obs": ""}, {"id": 31, "descripcion": "ESCOBILLAS", "unidad": "UND", "cantidad": 3, "estado": "OPERATIVO", "obs": ""}, {"id": 32, "descripcion": "BOLSAS DE BASURA COLOR ROJO", "unidad": "PQT", "cantidad": 2, "estado": "OPERATIVO", "obs": ""}, {"id": 33, "descripcion": "BOLSAS DE BASURA COLOR AMARILLO", "unidad": "PQT", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 34, "descripcion": "EXTENCIONES", "unidad": "MTS", "cantidad": 20, "estado": "OPERATIVO", "obs": ""}, {"id": 35, "descripcion": "COMPRENSORA", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 36, "descripcion": "EXTINTOES PQS DE 10 KG", "unidad": "UND", "cantidad": 2, "estado": "OPERATIVO", "obs": ""}, {"id": 37, "descripcion": "CONJUNTO INPREMIABLE T. L PANTALON", "unidad": "UND", "cantidad": 309, "estado": "OPERATIVO", "obs": ""}, {"id": 38, "descripcion": "CONJUNTO INPREMIABLE T. M PANTALON", "unidad": "UND", "cantidad": 83, "estado": "OPERATIVO", "obs": ""}, {"id": 39, "descripcion": "CONJUNTO INPREMIABLE T. L COMPAS", "unidad": "UND", "cantidad": 341, "estado": "OPERATIVO", "obs": ""}, {"id": 40, "descripcion": "CONJUNTO INPREMIABLE T. M COMPAS", "unidad": "UND", "cantidad": 176, "estado": "OPERATIVO", "obs": ""}, {"id": 41, "descripcion": "CONJUNTO INPREMIABLE T. S COMPAS", "unidad": "UND", "cantidad": 0, "estado": "OPERATIVO", "obs": ""}, {"id": 42, "descripcion": "MAMELUCOS AZULES ENTERISOS T. L", "unidad": "UND", "cantidad": 22, "estado": "OPERATIVO", "obs": ""}, {"id": 43, "descripcion": "MAMELUCOS AZULES ENTERISOS T. M", "unidad": "UND", "cantidad": 111, "estado": "OPERATIVO", "obs": ""}, {"id": 44, "descripcion": "MAMELUCOS AZULES ENTERISOS T. S", "unidad": "UND", "cantidad": 35, "estado": "OPERATIVO", "obs": ""}, {"id": 45, "descripcion": "MICROPOROSOS PARA BALDES", "unidad": "UND", "cantidad": 1650, "estado": "OPERATIVO", "obs": ""}, {"id": 46, "descripcion": "MICROPOROSOS CIRCULARES", "unidad": "UND", "cantidad": 1610, "estado": "OPERATIVO", "obs": ""}, {"id": 47, "descripcion": "SOGA NAILO DE UN CUARTO", "unidad": "KG", "cantidad": 15, "estado": "OPERATIVO", "obs": ""}, {"id": 48, "descripcion": "JABAS BASES", "unidad": "UND", "cantidad": 140, "estado": "OPERATIVO", "obs": ""}, {"id": 49, "descripcion": "ROTOPLAS DE 250 LTS", "unidad": "UND", "cantidad": 3, "estado": "OPERATIVO", "obs": ""}, {"id": 50, "descripcion": "ROTOPLAS DE 250 LTS", "unidad": "UND", "cantidad": 1, "estado": "INOPERATIVO", "obs": ""}, {"id": 51, "descripcion": "LAVA HOJOS", "unidad": "UND", "cantidad": 3, "estado": "OPERATIVO", "obs": ""}, {"id": 52, "descripcion": "TUBO DE PERDIGAS NUEVAS", "unidad": "UND", "cantidad": 38, "estado": "OPERATIVO", "obs": ""}, {"id": 53, "descripcion": "FRANELAS VERDES CORTADAS", "unidad": "UND", "cantidad": 84, "estado": "OPERATIVO", "obs": ""}, {"id": 54, "descripcion": "COOLER DE AGUA", "unidad": "UND", "cantidad": 34, "estado": "OPERATIVO", "obs": ""}, {"id": 55, "descripcion": "BALANZAS", "unidad": "UND", "cantidad": 12, "estado": "OPERATIVO", "obs": ""}, {"id": 56, "descripcion": "PILAS AA", "unidad": "PAR", "cantidad": 8, "estado": "OPERATIVO", "obs": ""}, {"id": 57, "descripcion": "PILAS AAA", "unidad": "PAR", "cantidad": 12, "estado": "OPERATIVO", "obs": ""}, {"id": 58, "descripcion": "CINTA DE ENBALAJE", "unidad": "RLL", "cantidad": 4, "estado": "OPERATIVO", "obs": ""}, {"id": 59, "descripcion": "MASCARILLAS K95", "unidad": "CAJS", "cantidad": 10, "estado": "OPERATIVO", "obs": ""}, {"id": 60, "descripcion": "CADENAS DE MOTOCIERRA", "unidad": "UND", "cantidad": 5, "estado": "OPERATIVO", "obs": ""}, {"id": 61, "descripcion": "MAQUINA DE CALOR CALENTARDOR", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 62, "descripcion": "LUMINARIAS PHILIPS 150W", "unidad": "UND", "cantidad": 2, "estado": "OPERATIVO", "obs": ""}, {"id": 63, "descripcion": "ESTABILIZADORES ELECTRICOS", "unidad": "UND", "cantidad": 10, "estado": "OPERATIVO", "obs": ""}, {"id": 64, "descripcion": "RECOGEDORES VERDES", "unidad": "UND", "cantidad": 3, "estado": "OPERATIVO", "obs": ""}, {"id": 65, "descripcion": "ZAPATOS DE SEGURIDAD PUNTA DE ACERO T. 38", "unidad": "PAR", "cantidad": 4, "estado": "OPERATIVO", "obs": ""}, {"id": 66, "descripcion": "ZAPATOS DE SEGURIDAD PUNTA DE ACERO T. 39", "unidad": "PAR", "cantidad": 2, "estado": "OPERATIVO", "obs": ""}, {"id": 67, "descripcion": "ZAPATOS DE SEGURIDAD PUNTA DE ACERO T. 40", "unidad": "PAR", "cantidad": 0, "estado": "OPERATIVO", "obs": ""}, {"id": 68, "descripcion": "ZAPATOS DE SEGURIDAD PUNTA DE ACERO T. 41", "unidad": "PAR", "cantidad": 0, "estado": "OPERATIVO", "obs": ""}, {"id": 69, "descripcion": "ZAPATOS DE SEGURIDAD PUNTA DE ACERO T. 42", "unidad": "PAR", "cantidad": 2, "estado": "OPERATIVO", "obs": ""}, {"id": 70, "descripcion": "ZAPATOS DE SEGURIDAD PUNTA DE ACERO T. 43", "unidad": "PAR", "cantidad": 4, "estado": "OPERATIVO", "obs": ""}, {"id": 71, "descripcion": "BOTAS BLANCAS T. 38", "unidad": "PAR", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 72, "descripcion": "BOTAS BLANCAS T. 39", "unidad": "PAR", "cantidad": 0, "estado": "OPERATIVO", "obs": ""}, {"id": 73, "descripcion": "BOTAS BLANCAS T. 40", "unidad": "PAR", "cantidad": 3, "estado": "OPERATIVO", "obs": ""}, {"id": 74, "descripcion": "BOTAS BLANCAS T. 41", "unidad": "PAR", "cantidad": 0, "estado": "OPERATIVO", "obs": ""}, {"id": 75, "descripcion": "BOTAS BLANCAS T. 42", "unidad": "PAR", "cantidad": 3, "estado": "OPERATIVO", "obs": ""}, {"id": 76, "descripcion": "DETERGENTE INDUTRIAL", "unidad": "KG", "cantidad": 24, "estado": "OPERATIVO", "obs": ""}, {"id": 77, "descripcion": "HIPOCLORITO", "unidad": "LTS", "cantidad": 60, "estado": "OPERATIVO", "obs": ""}, {"id": 78, "descripcion": "GALONES DE GASOLINA VACIOS", "unidad": "UND", "cantidad": 5, "estado": "OPERATIVO", "obs": ""}, {"id": 79, "descripcion": "JABON LIQUIDO", "unidad": "LTS", "cantidad": 60, "estado": "OPERATIVO", "obs": ""}, {"id": 80, "descripcion": "TINER", "unidad": "LTS", "cantidad": 10, "estado": "OPERATIVO", "obs": ""}, {"id": 81, "descripcion": "GRASA", "unidad": "BLDS", "cantidad": 4, "estado": "OPERATIVO", "obs": ""}, {"id": 82, "descripcion": "MOCHILA DE FESINFECCION JACTO", "unidad": "UND", "cantidad": 2, "estado": "INOPERATIVO", "obs": ""}, {"id": 83, "descripcion": "KITS ANTIDERRAME COMPLETOS", "unidad": "UND", "cantidad": 2, "estado": "OPERATIVO", "obs": ""}, {"id": 84, "descripcion": "CASCOS BLANCOS 3M", "unidad": "UND", "cantidad": 12, "estado": "OPERATIVO", "obs": ""}, {"id": 85, "descripcion": "LENTES DE MAYA RIGER", "unidad": "UND", "cantidad": 32, "estado": "OPERATIVO", "obs": ""}, {"id": 86, "descripcion": "COOLER CUADRADOS", "unidad": "UND", "cantidad": 2, "estado": "OPERATIVO", "obs": ""}, {"id": 87, "descripcion": "COOLER DE 10 LTS", "unidad": "UND", "cantidad": 4, "estado": "OPERATIVO", "obs": ""}, {"id": 88, "descripcion": "BALDES DE AGUA DE 20LTS", "unidad": "UND", "cantidad": 70, "estado": "OPERATIVO", "obs": ""}, {"id": 89, "descripcion": "TINAS PARA LAVAR", "unidad": "UND", "cantidad": 5, "estado": "OPERATIVO", "obs": ""}, {"id": 90, "descripcion": "PARIHUELAS ANTIDERRAME", "unidad": "UND", "cantidad": 6, "estado": "OPERATIVO", "obs": ""}, {"id": 91, "descripcion": "CASETAS DE GENERADOR", "unidad": "UND", "cantidad": 2, "estado": "OPERATIVO", "obs": ""}, {"id": 92, "descripcion": "CAJAS DE HERRAMIENTAS", "unidad": "UND", "cantidad": 5, "estado": "OPERATIVO", "obs": ""}, {"id": 93, "descripcion": "CAJAS DE HERRAMIENTAS", "unidad": "UND", "cantidad": 6, "estado": "INOPERATIVO", "obs": ""}, {"id": 94, "descripcion": "PALANAS", "unidad": "UND", "cantidad": 3, "estado": "OPERATIVO", "obs": ""}, {"id": 95, "descripcion": "PAPEL BOOND", "unidad": "PAQ", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 96, "descripcion": "CINTAS DE RETIFICACION", "unidad": "UND", "cantidad": 78, "estado": "OPERATIVO", "obs": ""}, {"id": 97, "descripcion": "CABALLETES DE MADERA", "unidad": "UND", "cantidad": 78, "estado": "OPERATIVO", "obs": ""}, {"id": 98, "descripcion": "CABALLETES DE MADERA", "unidad": "UND", "cantidad": 68, "estado": "INOPERATIVO", "obs": ""}, {"id": 99, "descripcion": "CABALLETES DE FIERRO", "unidad": "UND", "cantidad": 5, "estado": "OPERATIVO", "obs": ""}, {"id": 100, "descripcion": "PERDIGAS", "unidad": "UND", "cantidad": 16, "estado": "INOPERATIVO", "obs": ""}, {"id": 101, "descripcion": "HOYADORAS", "unidad": "UND", "cantidad": 3, "estado": "OPERATIVO", "obs": ""}, {"id": 102, "descripcion": "TABLETS SANSUM", "unidad": "UND", "cantidad": 4, "estado": "OPERATIVO", "obs": ""}, {"id": 103, "descripcion": "PISTULAS DE ESACNEO", "unidad": "UND", "cantidad": 3, "estado": "OPERATIVO", "obs": ""}, {"id": 104, "descripcion": "BATERIAS DE PISTOLA DE ESCANEO", "unidad": "UND", "cantidad": 4, "estado": "OPERATIVO", "obs": ""}, {"id": 105, "descripcion": "CARGADOR CEBRA COMPLETO", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 106, "descripcion": "POTES VERDES", "unidad": "UND", "cantidad": 3, "estado": "OPERATIVO", "obs": ""}, {"id": 107, "descripcion": "TALADRO BOSSH", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 108, "descripcion": "TALADRO BOSSH", "unidad": "UND", "cantidad": 1, "estado": "INOPERATIVO", "obs": ""}, {"id": 109, "descripcion": "ARNES DE CASCOS", "unidad": "UND", "cantidad": 9, "estado": "OPERATIVO", "obs": ""}, {"id": 110, "descripcion": "CORTADOR DE LAMINAS", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 111, "descripcion": "MASCARILLAS DE POLVO", "unidad": "UND", "cantidad": 60, "estado": "OPERATIVO", "obs": ""}, {"id": 112, "descripcion": "LLAVE CRUS DE RUEDAS", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 113, "descripcion": "ESMALTEN SINTETICO", "unidad": "UND", "cantidad": 3, "estado": "OPERATIVO", "obs": ""}, {"id": 114, "descripcion": "PONCHOS DE AGUA NARANJAS", "unidad": "UND", "cantidad": 70, "estado": "OPERATIVO", "obs": ""}, {"id": 115, "descripcion": "PONCHOS DE AGUA 2DO USO", "unidad": "UND", "cantidad": 7, "estado": "OPERATIVO", "obs": ""}, {"id": 116, "descripcion": "RESORTES TIJERAS TELESCOPICAS", "unidad": "UND", "cantidad": 90, "estado": "OPERATIVO", "obs": ""}, {"id": 117, "descripcion": "INPRESORA MATRICIAL", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 118, "descripcion": "WINCHA DE 5M", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 119, "descripcion": "GUNTES DE METAL 2DO USO", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 120, "descripcion": "BOYA PARA TANQUE", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 121, "descripcion": "CITAS DE SENALISACION", "unidad": "ROLL", "cantidad": 2, "estado": "OPERATIVO", "obs": ""}, {"id": 122, "descripcion": "ARCO DE CIERRA", "unidad": "UND", "cantidad": 2, "estado": "INOPERATIVO", "obs": ""}, {"id": 123, "descripcion": "MARTILLOS CON MANGO DE MADRA", "unidad": "UND", "cantidad": 5, "estado": "OPERATIVO", "obs": ""}, {"id": 124, "descripcion": "MACHETE GAVILAN", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 125, "descripcion": "INFLADORES", "unidad": "UND", "cantidad": 1, "estado": "INOPERATIVO", "obs": ""}, {"id": 126, "descripcion": "CADENA GRUESA DE FIERRO", "unidad": "MTS", "cantidad": 2, "estado": "OPERATIVO", "obs": ""}, {"id": 127, "descripcion": "CABLE ELCTRICO", "unidad": "MTS", "cantidad": 30, "estado": "OPERATIVO", "obs": ""}, {"id": 128, "descripcion": "MANGERA NEGRA CIEGA", "unidad": "MTS", "cantidad": 30, "estado": "OPERATIVO", "obs": ""}, {"id": 129, "descripcion": "TINTA PARA MARCADOR DE PIZARRA BLANCA AZUL", "unidad": "UND", "cantidad": 4, "estado": "OPERATIVO", "obs": ""}, {"id": 130, "descripcion": "TINTA PARA MARCADOR DE PIZARRA BLANCA ROJAS", "unidad": "UND", "cantidad": 2, "estado": "OPERATIVO", "obs": ""}, {"id": 131, "descripcion": "TINTA PARA MARCADOR DE PIZARRA BLANCA VERDE", "unidad": "UND", "cantidad": 2, "estado": "OPERATIVO", "obs": ""}, {"id": 132, "descripcion": "TINTA PARA MARCADOR DE PIZARRA BLANCA NEGRO", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 133, "descripcion": "SACA GRANPAS", "unidad": "UND", "cantidad": 2, "estado": "OPERATIVO", "obs": ""}, {"id": 134, "descripcion": "PERFORADORES NUEVOS", "unidad": "UND", "cantidad": 2, "estado": "OPERATIVO", "obs": ""}, {"id": 135, "descripcion": "PERFORADORES 2DO USO", "unidad": "UND", "cantidad": 2, "estado": "OPERATIVO", "obs": ""}, {"id": 136, "descripcion": "ENGRAMPADORES", "unidad": "UND", "cantidad": 4, "estado": "OPERATIVO", "obs": ""}, {"id": 137, "descripcion": "CINTAS RIBON", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 138, "descripcion": "PAPELERA COLOR MARRON", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 139, "descripcion": "BALANZAS ELEC DIGITALES 5KG TRUPER", "unidad": "UND", "cantidad": 18, "estado": "OPERATIVO", "obs": ""}, {"id": 140, "descripcion": "BARRETA", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 141, "descripcion": "SILLAS BLANCAS", "unidad": "UND", "cantidad": 2, "estado": "OPERATIVO", "obs": ""}, {"id": 142, "descripcion": "BANCOS MARRONES", "unidad": "UND", "cantidad": 19, "estado": "OPERATIVO", "obs": ""}, {"id": 143, "descripcion": "DESARMADOR ESTRELLA", "unidad": "UND", "cantidad": 2, "estado": "OPERATIVO", "obs": ""}, {"id": 144, "descripcion": "DESARMADORES PLANOS", "unidad": "UND", "cantidad": 4, "estado": "OPERATIVO", "obs": ""}, {"id": 145, "descripcion": "PINZA ALICATE", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 146, "descripcion": "TIJERA ARTESCO", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 147, "descripcion": "LIMAS CON MANGO DE PALO", "unidad": "UND", "cantidad": 10, "estado": "OPERATIVO", "obs": ""}, {"id": 148, "descripcion": "LLAVE ESTILSON Nº 6", "unidad": "UND", "cantidad": 2, "estado": "OPERATIVO", "obs": ""}, {"id": 149, "descripcion": "LLAVE ESTILSON Nº 8", "unidad": "UND", "cantidad": 2, "estado": "OPERATIVO", "obs": ""}, {"id": 150, "descripcion": "LLAVE ESTILSON Nº 10", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 151, "descripcion": "BISAGRAS", "unidad": "UND", "cantidad": 7, "estado": "OPERATIVO", "obs": ""}, {"id": 152, "descripcion": "LLAVES Nº 8", "unidad": "UND", "cantidad": 20, "estado": "OPERATIVO", "obs": ""}, {"id": 153, "descripcion": "LLAVES Nº 11", "unidad": "UND", "cantidad": 15, "estado": "OPERATIVO", "obs": ""}, {"id": 154, "descripcion": "LLAVES Nº 10", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 155, "descripcion": "LLAVES MIXTAS Nº 10 - 12", "unidad": "UND", "cantidad": 2, "estado": "OPERATIVO", "obs": ""}, {"id": 156, "descripcion": "LLAVES MIXTAS Nº 14 - 17", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 157, "descripcion": "LLAVES Nº 24", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 158, "descripcion": "LLAVES Nº 18", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 159, "descripcion": "LLAVES Nº 19", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 160, "descripcion": "LLAVES Nº 14", "unidad": "UND", "cantidad": 10, "estado": "OPERATIVO", "obs": ""}, {"id": 161, "descripcion": "CABEZALES DE PERDIGAS ANTIGUAS", "unidad": "UND", "cantidad": 370, "estado": "OPERATIVO", "obs": ""}, {"id": 162, "descripcion": "CHAPA MARCA CANTOL 2DO USO", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 163, "descripcion": "TIJERA DE PODA JARDIN", "unidad": "UND", "cantidad": 1, "estado": "INOPERATIVO", "obs": ""}, {"id": 164, "descripcion": "ESMERIL TRUPER", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 165, "descripcion": "PIÑO DE PORTA BIN", "unidad": "UND", "cantidad": 1, "estado": "OPERATIVO", "obs": ""}, {"id": 166, "descripcion": "TABLEROS DE MADERA", "unidad": "UND", "cantidad": 8, "estado": "OPERATIVO", "obs": ""}];
+
+/* ============================================================
+   PERSISTENCIA (localStorage)
+=============================================================*/
+const LS_STOCK = 'almacen_stock_v1';
+const LS_DESPACHOS = 'almacen_despachos_v1';
+const LS_INGRESOS = 'almacen_ingresos_v1';
+const LS_NEXT_ID = 'almacen_next_item_id_v1';
+const LS_NEXT_DESPACHO_ID = 'almacen_next_despacho_id_v1';
+const LS_NEXT_INGRESO_ID = 'almacen_next_ingreso_id_v1';
+const LS_PRESTAMOS = 'almacen_prestamos_v1';
+const LS_NEXT_PRESTAMO_ID = 'almacen_next_prestamo_id_v1';
+const LS_INTERNAMIENTOS = 'almacen_internamientos_v1';
+const LS_NEXT_INTERNAMIENTO_ID = 'almacen_next_internamiento_id_v1';
+
+function cargar(key, fallback){
+  try{
+    const raw = localStorage.getItem(key);
+    if(raw===null) return fallback;
+    return JSON.parse(raw);
+  }catch(e){ return fallback; }
+}
+function guardar(key, val){
+  localStorage.setItem(key, JSON.stringify(val));
+}
+
+let stock = [];
+let despachos = [];
+let ingresos = [];
+let prestamos = [];
+let internamientos = [];
+let nextItemId = 1;
+let nextDespachoId = 1;
+let nextIngresoId = 1;
+let nextPrestamoId = 1;
+let nextInternamientoId = 1;
+
+// Migración: si ya existía stock guardado por fundo (versión anterior) y todavía
+// no hay stock general, se toma como base el de Arato 1 (o Arato 2 si ese no existe)
+// para no perder lo ya registrado.
+function migrarStockAntiguoSiHaceFalta(){
+  const yaExiste = cargar(claveGeneral(LS_STOCK), null);
+  if(yaExiste!==null) return yaExiste;
+  const antiguoA1 = cargar(LS_STOCK + '_arato1', null);
+  const antiguoA2 = cargar(LS_STOCK + '_arato2', null);
+  const base = antiguoA1 || antiguoA2;
+  if(base){
+    guardar(claveGeneral(LS_STOCK), base);
+    const ingA1 = cargar(LS_INGRESOS + '_arato1', []);
+    const ingA2 = cargar(LS_INGRESOS + '_arato2', []);
+    const ingresosMigrados = [...ingA1, ...ingA2];
+    guardar(claveGeneral(LS_INGRESOS), ingresosMigrados);
+    return base;
+  }
+  return null;
+}
+
+function cargarStockGeneral(){
+  stock = migrarStockAntiguoSiHaceFalta();
+  if(stock===null){
+    stock = JSON.parse(JSON.stringify(STOCK_INICIAL));
+    guardar(claveGeneral(LS_STOCK), stock);
+  }
+  ingresos = cargar(claveGeneral(LS_INGRESOS), []);
+  prestamos = cargar(claveGeneral(LS_PRESTAMOS), []);
+  nextItemId = cargar(claveGeneral(LS_NEXT_ID), (Math.max(0,...stock.map(i=>i.id))+1));
+  nextIngresoId = cargar(claveGeneral(LS_NEXT_INGRESO_ID), (Math.max(0,...ingresos.map(i=>i.id||0))+1));
+  nextPrestamoId = cargar(claveGeneral(LS_NEXT_PRESTAMO_ID), (Math.max(0,...prestamos.map(i=>i.id||0))+1));
+}
+
+function cargarDespachosFundo(){
+  if(!FUNDO_ACTUAL) return;
+  despachos = cargar(claveFundo(LS_DESPACHOS), []);
+  internamientos = cargar(claveFundo(LS_INTERNAMIENTOS), []);
+  nextDespachoId = cargar(claveFundo(LS_NEXT_DESPACHO_ID), 1);
+  nextInternamientoId = cargar(claveFundo(LS_NEXT_INTERNAMIENTO_ID), 1);
+}
+
+function persistirStock(){
+  guardar(claveGeneral(LS_STOCK), stock);
+  guardar(claveGeneral(LS_INGRESOS), ingresos);
+  guardar(claveGeneral(LS_PRESTAMOS), prestamos);
+  guardar(claveGeneral(LS_NEXT_ID), nextItemId);
+  guardar(claveGeneral(LS_NEXT_INGRESO_ID), nextIngresoId);
+  guardar(claveGeneral(LS_NEXT_PRESTAMO_ID), nextPrestamoId);
+}
+
+function persistirDespachos(){
+  if(!FUNDO_ACTUAL) return;
+  guardar(claveFundo(LS_DESPACHOS), despachos);
+  guardar(claveFundo(LS_INTERNAMIENTOS), internamientos);
+  guardar(claveFundo(LS_NEXT_DESPACHO_ID), nextDespachoId);
+  guardar(claveFundo(LS_NEXT_INTERNAMIENTO_ID), nextInternamientoId);
+}
+
+function persistirTodo(){
+  persistirStock();
+  persistirDespachos();
+}
+
+// Sube a la nube automáticamente cada vez que se guarda algo,
+// excepto cuando estamos aplicando datos que acaban de bajar de la nube.
+let _aplicandoRemoto = false;
+const _persistirStockOriginal = persistirStock;
+persistirStock = function(){
+  _persistirStockOriginal();
+  if(!_aplicandoRemoto) programarSubidaStock();
+};
+const _persistirDespachosOriginal = persistirDespachos;
+persistirDespachos = function(){
+  _persistirDespachosOriginal();
+  if(!_aplicandoRemoto) programarSubidaDespachos();
+};
+
+/* ============================================================
+   UTILIDADES
+=============================================================*/
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function hoyISO(){
+  const d = new Date();
+  const tz = d.getTimezoneOffset()*60000;
+  return new Date(d - tz).toISOString().slice(0,10);
+}
+function fmtFecha(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+function buscarItem(id){ return stock.find(i=>i.id===Number(id)); }
+function abrirModal(id){ document.getElementById(id).classList.add('show'); }
+function cerrarModal(id){ document.getElementById(id).classList.remove('show'); }
+
+/* ============================================================
+   MODAL: BUSCAR / VER STOCK (usado en Despacho e Ingreso)
+=============================================================*/
+let buscadorContexto = null; // 'despacho' | 'ingreso' | 'prestamo' | 'internamiento'
+function abrirBuscadorStock(contexto){
+  buscadorContexto = contexto;
+  document.getElementById('buscarEnModalStock').value = '';
+  renderModalStockList();
+  abrirModal('modalBuscarStock');
+  setTimeout(()=>document.getElementById('buscarEnModalStock').focus(), 50);
+}
+function renderModalStockList(){
+  const q = (document.getElementById('buscarEnModalStock').value||'').toUpperCase().trim();
+  const cont = document.getElementById('listaModalStock');
+  const items = stock
+    .filter(i=> !q || i.descripcion.toUpperCase().includes(q))
+    .sort((a,b)=>a.descripcion.localeCompare(b.descripcion));
+  if(items.length===0){
+    cont.innerHTML = '<div class="empty">Sin resultados.</div>';
+    return;
+  }
+  cont.innerHTML = items.map(i=>`
+    <div class="item-linea" style="cursor:pointer;" onclick="seleccionarProductoModal(${i.id})">
+      <span class="desc">${i.descripcion} <small style="color:#8a978f">(${i.unidad})</small></span>
+      <span class="cant">${i.cantidad}</span>
+      <span class="tag ${i.estado==='OPERATIVO'?'tag-op':'tag-inop'}">${i.estado==='OPERATIVO'?'OP':'INOP'}</span>
+    </div>
+  `).join('');
+}
+document.getElementById('buscarEnModalStock').addEventListener('input', renderModalStockList);
+function seleccionarProductoModal(id){
+  const item = buscarItem(id);
+  if(!item) return;
+  if(buscadorContexto==='despacho'){
+    document.getElementById('buscarProductoDespacho').value = item.descripcion;
+    document.getElementById('stockDisponibleHint').textContent = `Stock disponible: ${item.cantidad} ${item.unidad} (${item.estado})`;
+  } else if(buscadorContexto==='ingreso'){
+    document.getElementById('buscarProductoIngreso').value = item.descripcion;
+  } else if(buscadorContexto==='prestamo'){
+    document.getElementById('buscarProductoPrestamo').value = item.descripcion;
+    document.getElementById('stockDisponiblePrestamoHint').textContent = `Stock disponible: ${item.cantidad} ${item.unidad} (${item.estado})`;
+  } else if(buscadorContexto==='internamiento'){
+    document.getElementById('buscarProductoInternamiento').value = item.descripcion;
+    document.getElementById('buscarProductoInternamiento').dispatchEvent(new Event('input'));
+  }
+  cerrarModal('modalBuscarStock');
+}
+
+/* ============================================================
+   NAVEGACIÓN DE TABS
+=============================================================*/
+document.getElementById('tabs').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-tab]');
+  if(!btn) return;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  ['despacho','internamiento','historial'].forEach(t=>{
+    document.getElementById('tab-'+t).style.display = (t===btn.dataset.tab) ? '' : 'none';
+  });
+  if(btn.dataset.tab==='historial') renderHistorial();
+  if(btn.dataset.tab==='despacho') renderDatalistProductos();
+  if(btn.dataset.tab==='internamiento'){
+    poblarGruposInternamiento();
+    renderDatalistProductosInternamiento();
+    renderResumenInternamiento();
+    poblarGruposResumen();
+    renderResumenMultiGrupo();
+  }
+});
+
+/* ============================================================
+   NAVEGACIÓN DE TABS — VISTA COMBINADA (Fundo Arato — Todos)
+=============================================================*/
+document.getElementById('tabsCombinado').addEventListener('click', async (e)=>{
+  const btn = e.target.closest('button[data-tab]');
+  if(!btn) return;
+  document.querySelectorAll('#tabsCombinado button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  ['despachos','stock'].forEach(t=>{
+    document.getElementById('tab-combo-'+t).style.display = (t===btn.dataset.tab) ? '' : 'none';
+  });
+  if(btn.dataset.tab==='stock'){
+    cargarStockGeneral();
+    renderStock();
+    // Antes solo leía lo que había en este dispositivo (localStorage) y nunca
+    // bajaba de la nube, así que un ingreso hecho en otra pantalla/dispositivo
+    // no aparecía aquí hasta refrescar toda la página. Ahora se sincroniza
+    // desde la nube cada vez que se abre esta pestaña.
+    await sincronizarStockDesdeNube(false);
+  }
+});
+
+/* ============================================================
+   TAB STOCK
+=============================================================*/
+function renderStock(){
+  const q = (document.getElementById('buscarStock').value||'').toUpperCase().trim();
+  const tbody = document.getElementById('tablaStock');
+  tbody.innerHTML = '';
+  const items = stock
+    .filter(i=> !q || i.descripcion.toUpperCase().includes(q))
+    .sort((a,b)=>a.descripcion.localeCompare(b.descripcion));
+
+  items.forEach(i=>{
+    const tr = document.createElement('tr');
+    const bajo = i.cantidad<=3 ? ' badge-stock-bajo' : '';
+    tr.innerHTML = `
+      <td>${i.descripcion}${i.obs?`<br><small style="color:#8a978f">${i.obs}</small>`:''}</td>
+      <td>${i.unidad}</td>
+      <td class="${bajo}">${i.cantidad}</td>
+      <td><span class="tag ${i.estado==='OPERATIVO'?'tag-op':'tag-inop'}">${i.estado==='OPERATIVO'?'OP':'INOP'}</span></td>
+      <td><button class="btn btn-gris btn-sm" onclick="abrirModalEditarItem(${i.id})">✎</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('statTotalItems').textContent = stock.length;
+  document.getElementById('statOperativos').textContent = stock.filter(i=>i.estado==='OPERATIVO').length;
+  document.getElementById('statBajo').textContent = stock.filter(i=>i.cantidad<=3).length;
+}
+document.getElementById('buscarStock').addEventListener('input', renderStock);
+
+function abrirModalNuevoItem(){
+  document.getElementById('modalItemTitulo').textContent = 'Nuevo producto';
+  document.getElementById('editId').value = '';
+  document.getElementById('editDesc').value = '';
+  document.getElementById('editUnd').value = 'UND';
+  document.getElementById('editCant').value = 0;
+  document.getElementById('editEstado').value = 'OPERATIVO';
+  document.getElementById('editObs').value = '';
+  abrirModal('modalItem');
+}
+function abrirModalEditarItem(id){
+  const i = buscarItem(id);
+  if(!i) return;
+  document.getElementById('modalItemTitulo').textContent = 'Editar producto';
+  document.getElementById('editId').value = i.id;
+  document.getElementById('editDesc').value = i.descripcion;
+  document.getElementById('editUnd').value = i.unidad;
+  document.getElementById('editCant').value = i.cantidad;
+  document.getElementById('editEstado').value = i.estado;
+  document.getElementById('editObs').value = i.obs||'';
+  abrirModal('modalItem');
+}
+function guardarItemEditado(){
+  const desc = document.getElementById('editDesc').value.trim();
+  if(!desc){ toast('Ingresa una descripción'); return; }
+  const und = document.getElementById('editUnd').value.trim() || 'UND';
+  const cant = Number(document.getElementById('editCant').value)||0;
+  const estado = document.getElementById('editEstado').value;
+  const obs = document.getElementById('editObs').value.trim();
+  const idVal = document.getElementById('editId').value;
+
+  if(idVal===''){
+    stock.push({id: nextItemId++, descripcion:desc, unidad:und, cantidad:cant, estado, obs});
+    toast('Producto agregado');
+  } else {
+    const i = buscarItem(idVal);
+    i.descripcion = desc; i.unidad = und; i.cantidad = cant; i.estado = estado; i.obs = obs;
+    toast('Producto actualizado');
+  }
+  persistirTodo();
+  cerrarModal('modalItem');
+  renderStock();
+}
+function eliminarItemActual(){
+  const idVal = document.getElementById('editId').value;
+  if(idVal===''){ cerrarModal('modalItem'); return; }
+  if(!confirm('¿Eliminar este producto del stock?')) return;
+  stock = stock.filter(i=>i.id!==Number(idVal));
+  persistirTodo();
+  cerrarModal('modalItem');
+  renderStock();
+  toast('Producto eliminado');
+}
+
+function exportarBackup(){
+  const data = {stock, despachos, ingresos, exportado: new Date().toISOString()};
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'backup_almacen_'+hoyISO()+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function descargarStockExcel(){
+  if(typeof XLSX==='undefined'){
+    toast('No se pudo cargar la herramienta de Excel (revisa tu conexión)');
+    return;
+  }
+  const datos = stock
+    .slice()
+    .sort((a,b)=>a.descripcion.localeCompare(b.descripcion))
+    .map(i=>({
+      'DESCRIPCION': i.descripcion,
+      'UND': i.unidad,
+      'CANTIDAD': i.cantidad,
+      'ESTADO': i.estado,
+      'OBSERVACION': i.obs || ''
+    }));
+  const ws = XLSX.utils.json_to_sheet(datos);
+  ws['!cols'] = [{wch:45},{wch:10},{wch:12},{wch:14},{wch:30}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'STOCK GENERAL');
+  XLSX.writeFile(wb, 'stock_general_'+hoyISO()+'.xlsx');
+  toast('Excel descargado ('+datos.length+' productos)');
+}
+
+function restablecerStockCatalogo(){
+  const ok = confirm('Esto reemplazará TODOS los productos y cantidades del stock general por el catálogo actualizado (inventario de fin de campaña). No afecta despachos, préstamos ni internamientos ya registrados. ¿Continuar?');
+  if(!ok) return;
+  stock = JSON.parse(JSON.stringify(STOCK_INICIAL));
+  nextItemId = Math.max(0, ...stock.map(i=>i.id)) + 1;
+  persistirStock();
+  renderStock();
+  toast('Stock actualizado desde el catálogo (' + stock.length + ' productos)');
+}
+
+/* ============================================================
+   TAB DESPACHO
+=============================================================*/
+const GRUPOS_AZ = [];
+for(let c=65;c<=90;c++) GRUPOS_AZ.push(String.fromCharCode(c));
+let grupoSeleccionado = null;
+let itemsDespachoTemp = []; // {productId, descripcion, unidad, cantidad}
+
+function renderGruposGrid(){
+  const cont = document.getElementById('gruposGrid');
+  cont.innerHTML = '';
+  GRUPOS_AZ.forEach(g=>{
+    const chip = document.createElement('div');
+    chip.className = 'grupo-chip' + (grupoSeleccionado===g ? ' sel':'');
+    chip.textContent = g;
+    chip.onclick = ()=>{
+      grupoSeleccionado = (grupoSeleccionado===g) ? null : g;
+      document.getElementById('grupoManual').value='';
+      renderGruposGrid();
+    };
+    cont.appendChild(chip);
+  });
+}
+renderGruposGrid();
+document.getElementById('fechaDespacho').value = hoyISO();
+document.getElementById('grupoManual').addEventListener('input', ()=>{
+  if(document.getElementById('grupoManual').value.trim()!==''){
+    grupoSeleccionado = null;
+    renderGruposGrid();
+  }
+});
+
+function grupoActual(){
+  const manual = document.getElementById('grupoManual').value.trim();
+  return manual || grupoSeleccionado;
+}
+
+function renderDatalistProductos(){
+  const dl = document.getElementById('listaProductos');
+  dl.innerHTML = '';
+  stock.filter(i=>i.estado==='OPERATIVO' || i.cantidad>0).forEach(i=>{
+    const opt = document.createElement('option');
+    opt.value = i.descripcion;
+    opt.dataset.id = i.id;
+    dl.appendChild(opt);
+  });
+}
+renderDatalistProductos();
+
+document.getElementById('buscarProductoDespacho').addEventListener('input', function(){
+  const item = stock.find(i=>i.descripcion===this.value);
+  const hint = document.getElementById('stockDisponibleHint');
+  if(item){
+    hint.textContent = `Stock disponible: ${item.cantidad} ${item.unidad} (${item.estado})`;
+  } else {
+    hint.textContent = '';
+  }
+});
+
+function agregarItemDespacho(){
+  const nombre = document.getElementById('buscarProductoDespacho').value.trim();
+  const item = stock.find(i=>i.descripcion===nombre);
+  if(!item){ toast('Selecciona un producto válido de la lista'); return; }
+  const cant = Number(document.getElementById('cantidadDespacho').value);
+  if(!cant || cant<=0){ toast('Ingresa una cantidad válida'); return; }
+
+  const yaEnLista = itemsDespachoTemp.filter(x=>x.productId===item.id).reduce((s,x)=>s+x.cantidad,0);
+  if(cant + yaEnLista > item.cantidad){
+    toast(`Stock insuficiente. Disponible: ${item.cantidad - yaEnLista}`);
+    return;
+  }
+  const existente = itemsDespachoTemp.find(x=>x.productId===item.id);
+  if(existente){ existente.cantidad += cant; }
+  else{
+    itemsDespachoTemp.push({productId:item.id, descripcion:item.descripcion, unidad:item.unidad, cantidad:cant});
+  }
+  document.getElementById('buscarProductoDespacho').value='';
+  document.getElementById('cantidadDespacho').value=1;
+  document.getElementById('stockDisponibleHint').textContent='';
+  renderItemsDespachoTemp();
+}
+function quitarItemDespachoTemp(idx){
+  itemsDespachoTemp.splice(idx,1);
+  renderItemsDespachoTemp();
+}
+function renderItemsDespachoTemp(){
+  const cont = document.getElementById('listaItemsDespacho');
+  if(itemsDespachoTemp.length===0){
+    cont.innerHTML = '<div class="empty">Aún no agregas productos.</div>';
+    return;
+  }
+  cont.innerHTML = itemsDespachoTemp.map((it,idx)=>`
+    <div class="item-linea">
+      <span class="desc">${it.descripcion} <small style="color:#8a978f">(${it.unidad})</small></span>
+      <span class="cant">${it.cantidad}</span>
+      <button class="btn btn-rojo btn-sm" onclick="quitarItemDespachoTemp(${idx})">✕</button>
+    </div>
+  `).join('');
+}
+
+function guardarDespacho(){
+  const grupo = grupoActual();
+  const fecha = document.getElementById('fechaDespacho').value;
+  if(!grupo){ toast('Selecciona o escribe un grupo'); return; }
+  if(!fecha){ toast('Selecciona una fecha'); return; }
+  if(itemsDespachoTemp.length===0){ toast('Agrega al menos un producto'); return; }
+
+  // validar y descontar stock
+  for(const it of itemsDespachoTemp){
+    const prod = buscarItem(it.productId);
+    if(!prod || prod.cantidad < it.cantidad){
+      toast('Stock insuficiente para '+it.descripcion);
+      return;
+    }
+  }
+  itemsDespachoTemp.forEach(it=>{
+    const prod = buscarItem(it.productId);
+    prod.cantidad -= it.cantidad;
+  });
+
+  despachos.push({
+    id: nextDespachoId++,
+    grupo: grupo.toUpperCase(),
+    fecha,
+    operador: document.getElementById('operadorDespacho').value.trim(),
+    responsableRecepcion: document.getElementById('responsableRecepcionDespacho').value.trim(),
+    obs: document.getElementById('obsDespacho').value.trim(),
+    items: JSON.parse(JSON.stringify(itemsDespachoTemp)),
+    creado: new Date().toISOString()
+  });
+
+  persistirTodo();
+  toast('Despacho registrado para grupo '+grupo.toUpperCase());
+
+  // Comprobante para compartir como evidencia
+  ultimoDespachoGuardado = despachos[despachos.length-1];
+  quitarFotoEvidenciaDespacho();
+  renderComprobanteDespacho();
+
+  // reset formulario
+  itemsDespachoTemp = [];
+  grupoSeleccionado = null;
+  document.getElementById('grupoManual').value='';
+  document.getElementById('operadorDespacho').value='';
+  document.getElementById('responsableRecepcionDespacho').value='';
+  document.getElementById('obsDespacho').value='';
+  renderGruposGrid();
+  renderItemsDespachoTemp();
+  renderStock();
+  renderDatalistProductos();
+}
+
+/* ============================================================
+   COMPROBANTE DE DESPACHO (evidencia + foto) PARA WHATSAPP
+=============================================================*/
+let ultimoDespachoGuardado = null;
+let fotoEvidenciaDespachoDataUrl = null;
+
+function renderComprobanteDespacho(){
+  const vacio = document.getElementById('comprobanteDespachoVacio');
+  const contenido = document.getElementById('comprobanteDespachoContenido');
+  if(!ultimoDespachoGuardado){
+    vacio.style.display = '';
+    contenido.style.display = 'none';
+    return;
+  }
+  vacio.style.display = 'none';
+  contenido.style.display = '';
+  const d = ultimoDespachoGuardado;
+
+  document.getElementById('comprobanteDespachoGrupoBadge').textContent = d.grupo;
+  document.getElementById('comprobanteDespachoFundoSub').textContent = 'Control de Almacén — Fundo ' + (NOMBRES_FUNDO[FUNDO_ACTUAL] || 'Arato');
+  document.getElementById('comprobanteDespachoFecha').textContent = '📅 ' + fmtFecha(d.fecha);
+  document.getElementById('comprobanteDespachoAlmacenero').textContent = d.operador || '—';
+  document.getElementById('comprobanteDespachoResponsable').textContent = d.responsableRecepcion || '—';
+
+  document.getElementById('comprobanteDespachoTabla').innerHTML = `
+    <table>
+      <thead><tr><th>Producto</th><th>Cantidad</th></tr></thead>
+      <tbody>
+        ${d.items.map(it=>`<tr><td>${it.descripcion}</td><td>${it.cantidad} ${it.unidad}</td></tr>`).join('')}
+      </tbody>
+    </table>
+  `;
+
+  const obsWrap = document.getElementById('comprobanteDespachoObsWrap');
+  if(d.obs){
+    obsWrap.style.display = '';
+    document.getElementById('comprobanteDespachoObs').textContent = d.obs;
+  } else {
+    obsWrap.style.display = 'none';
+  }
+}
+
+function manejarFotoEvidenciaDespacho(e){
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    fotoEvidenciaDespachoDataUrl = ev.target.result;
+    document.getElementById('fotoEvidenciaPreview').src = fotoEvidenciaDespachoDataUrl;
+    document.getElementById('fotoEvidenciaWrap').style.display = '';
+    document.getElementById('btnQuitarFotoEvidenciaDespacho').style.display = '';
+  };
+  reader.readAsDataURL(file);
+}
+document.getElementById('fotoEvidenciaCamaraInput').addEventListener('change', manejarFotoEvidenciaDespacho);
+document.getElementById('fotoEvidenciaGaleriaInput').addEventListener('change', manejarFotoEvidenciaDespacho);
+
+function quitarFotoEvidenciaDespacho(){
+  fotoEvidenciaDespachoDataUrl = null;
+  const inputCamara = document.getElementById('fotoEvidenciaCamaraInput');
+  if(inputCamara) inputCamara.value = '';
+  const inputGaleria = document.getElementById('fotoEvidenciaGaleriaInput');
+  if(inputGaleria) inputGaleria.value = '';
+  const wrap = document.getElementById('fotoEvidenciaWrap');
+  if(wrap) wrap.style.display = 'none';
+  const btn = document.getElementById('btnQuitarFotoEvidenciaDespacho');
+  if(btn) btn.style.display = 'none';
+}
+
+function enviarComprobanteDespachoComoImagen(){
+  if(!ultimoDespachoGuardado){ toast('Primero confirma un despacho'); return; }
+  if(typeof html2canvas==='undefined'){
+    toast('No se pudo cargar la herramienta de imagen (revisa tu conexión)');
+    return;
+  }
+  const el = document.getElementById('comprobanteDespachoCaptura');
+  html2canvas(el, {backgroundColor:'#ffffff', scale:2}).then(canvas=>{
+    canvas.toBlob(async (blob)=>{
+      if(!blob){ toast('No se pudo generar la imagen'); return; }
+      const d = ultimoDespachoGuardado;
+      const nombreArchivo = 'despacho_'+d.grupo+'_'+d.fecha+'.png';
+      const file = new File([blob], nombreArchivo, {type:'image/png'});
+
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        try{
+          await navigator.share({files:[file], title:'Despacho — Grupo '+d.grupo, text:'Evidencia de despacho'});
+          return;
+        }catch(err){
+          // usuario canceló u ocurrió un error; continuar con descarga
+        }
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nombreArchivo;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('Imagen guardada. Ábrela en WhatsApp para enviarla.');
+      window.open('https://wa.me/?text=' + encodeURIComponent('Evidencia de despacho adjunta (imagen guardada en el dispositivo).'), '_blank');
+    }, 'image/png');
+  });
+}
+renderItemsDespachoTemp();
+
+/* ============================================================
+   TAB INTERNAMIENTO / DEVOLUCIÓN
+=============================================================*/
+let itemsInternamientoTemp = []; // {productId, descripcion, unidad, cantidad}
+
+function poblarGruposInternamiento(){
+  const gruposUsados = [...new Set(despachos.map(d=>d.grupo))].sort();
+  const sel = document.getElementById('grupoInternamientoSelect');
+  const valorPrevio = sel.value;
+  sel.innerHTML = '<option value="">-- Selecciona un grupo --</option>' + gruposUsados.map(g=>`<option value="${g}">Grupo ${g}</option>`).join('');
+  if(gruposUsados.includes(valorPrevio)) sel.value = valorPrevio;
+}
+
+function renderDatalistProductosInternamiento(){
+  const dl = document.getElementById('listaProductosInternamiento');
+  if(!dl) return;
+  dl.innerHTML = stock.map(i=>`<option value="${i.descripcion}">`).join('');
+}
+
+// Para el grupo dado, junta por producto: cuánto se entregó (despachos),
+// cuánto ya se devolvió (internamientos guardados) y cuánto falta.
+function resumenInternamientoGrupo(grupo){
+  const mapa = {}; // productId -> {descripcion, unidad, entregado, devuelto}
+  despachos.filter(d=>d.grupo===grupo).forEach(d=>{
+    d.items.forEach(it=>{
+      if(!mapa[it.productId]) mapa[it.productId] = {descripcion:it.descripcion, unidad:it.unidad, entregado:0, devuelto:0};
+      mapa[it.productId].entregado += it.cantidad;
+    });
+  });
+  internamientos.filter(n=>n.grupo===grupo).forEach(n=>{
+    n.items.forEach(it=>{
+      if(!mapa[it.productId]) mapa[it.productId] = {descripcion:it.descripcion, unidad:it.unidad, entregado:0, devuelto:0};
+      mapa[it.productId].devuelto += it.cantidad;
+    });
+  });
+  return Object.entries(mapa).map(([productId, v])=>({productId:Number(productId), ...v}));
+}
+
+function pendienteProducto(grupo, productId){
+  const fila = resumenInternamientoGrupo(grupo).find(f=>f.productId===productId);
+  const entregado = fila ? fila.entregado : 0;
+  const devuelto = fila ? fila.devuelto : 0;
+  const enListaAhora = itemsInternamientoTemp.filter(x=>x.productId===productId).reduce((s,x)=>s+x.cantidad,0);
+  return entregado - devuelto - enListaAhora;
+}
+
+function renderResumenInternamiento(){
+  const grupo = document.getElementById('grupoInternamientoSelect').value;
+  const cont = document.getElementById('resumenInternamiento');
+  const cardForm = document.getElementById('cardFormInternamiento');
+
+  if(!grupo){
+    cont.innerHTML = '<div class="empty">Selecciona un grupo para ver qué se le entregó y qué falta por devolver.</div>';
+    cardForm.style.display = 'none';
+    return;
+  }
+
+  cardForm.style.display = '';
+  const filas = resumenInternamientoGrupo(grupo);
+
+  if(filas.length===0){
+    cont.innerHTML = '<div class="empty">Este grupo no tiene despachos registrados.</div>';
+    return;
+  }
+
+  filas.sort((a,b)=>a.descripcion.localeCompare(b.descripcion));
+  let hayFaltante = false;
+  cont.innerHTML = `
+    <table>
+      <thead><tr><th>Producto</th><th>Entregado</th><th>Devuelto</th><th>Faltante</th></tr></thead>
+      <tbody>
+        ${filas.map(f=>{
+          const pendienteTemp = itemsInternamientoTemp.filter(x=>x.productId===f.productId).reduce((s,x)=>s+x.cantidad,0);
+          const faltante = f.entregado - f.devuelto - pendienteTemp;
+          if(faltante>0) hayFaltante = true;
+          const estiloFaltante = faltante>0 ? 'color:var(--rojo); font-weight:700;' : 'color:var(--verde-d); font-weight:700;';
+          return `<tr>
+            <td>${f.descripcion}</td>
+            <td>${f.entregado} ${f.unidad}</td>
+            <td>${f.devuelto + pendienteTemp} ${f.unidad}${pendienteTemp?' <small>(+' + pendienteTemp + ' sin guardar)</small>':''}</td>
+            <td style="${estiloFaltante}">${faltante>0 ? faltante+' '+f.unidad : 'Completo'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+    ${hayFaltante ? `<div style="margin-top:8px; color:var(--rojo); font-weight:700;">⚠️ Hay materiales pendientes de devolución para el grupo ${grupo}.</div>` : `<div style="margin-top:8px; color:var(--verde-d); font-weight:700;">✔ Todo el material entregado a este grupo fue devuelto.</div>`}
+  `;
+}
+document.getElementById('grupoInternamientoSelect').addEventListener('change', ()=>{
+  itemsInternamientoTemp = [];
+  renderItemsInternamientoTemp();
+  renderResumenInternamiento();
+});
+
+document.getElementById('buscarProductoInternamiento').addEventListener('input', function(){
+  const grupo = document.getElementById('grupoInternamientoSelect').value;
+  const item = stock.find(i=>i.descripcion===this.value);
+  const hint = document.getElementById('pendienteInternamientoHint');
+  if(item && grupo){
+    const pend = pendienteProducto(grupo, item.id);
+    hint.textContent = pend>0 ? `Pendiente por devolver: ${pend} ${item.unidad}` : 'Este producto ya no tiene pendiente para este grupo';
+  } else {
+    hint.textContent = '';
+  }
+});
+
+function agregarItemInternamiento(){
+  const grupo = document.getElementById('grupoInternamientoSelect').value;
+  if(!grupo){ toast('Selecciona un grupo primero'); return; }
+  const nombre = document.getElementById('buscarProductoInternamiento').value.trim();
+  const item = stock.find(i=>i.descripcion===nombre);
+  if(!item){ toast('Selecciona un producto válido de la lista'); return; }
+  const cant = Number(document.getElementById('cantidadInternamiento').value);
+  if(!cant || cant<=0){ toast('Ingresa una cantidad válida'); return; }
+
+  const pend = pendienteProducto(grupo, item.id);
+  if(cant > pend && pend > 0){
+    toast(`Aviso: solo quedaban pendientes ${pend} ${item.unidad}, se agregó ${cant} de todas formas`);
+  } else if(pend<=0){
+    toast(`Aviso: este producto ya no tenía pendiente para el grupo ${grupo}, se agregó de todas formas`);
+  }
+
+  const existente = itemsInternamientoTemp.find(x=>x.productId===item.id);
+  if(existente){ existente.cantidad += cant; }
+  else{
+    itemsInternamientoTemp.push({productId:item.id, descripcion:item.descripcion, unidad:item.unidad, cantidad:cant});
+  }
+  document.getElementById('buscarProductoInternamiento').value='';
+  document.getElementById('cantidadInternamiento').value=1;
+  document.getElementById('pendienteInternamientoHint').textContent='';
+  renderItemsInternamientoTemp();
+  renderResumenInternamiento();
+}
+function quitarItemInternamientoTemp(idx){
+  itemsInternamientoTemp.splice(idx,1);
+  renderItemsInternamientoTemp();
+  renderResumenInternamiento();
+}
+function renderItemsInternamientoTemp(){
+  const cont = document.getElementById('listaItemsInternamiento');
+  if(itemsInternamientoTemp.length===0){
+    cont.innerHTML = '<div class="empty">Aún no agregas productos.</div>';
+    return;
+  }
+  cont.innerHTML = itemsInternamientoTemp.map((it,idx)=>`
+    <div class="item-linea">
+      <span class="desc">${it.descripcion} <small style="color:#8a978f">(${it.unidad})</small></span>
+      <span class="cant">${it.cantidad}</span>
+      <button class="btn btn-rojo btn-sm" onclick="quitarItemInternamientoTemp(${idx})">✕</button>
+    </div>
+  `).join('');
+}
+
+function guardarInternamiento(){
+  const grupo = document.getElementById('grupoInternamientoSelect').value;
+  const fecha = document.getElementById('fechaInternamiento').value;
+  if(!grupo){ toast('Selecciona un grupo'); return; }
+  if(!fecha){ toast('Selecciona una fecha'); return; }
+  if(itemsInternamientoTemp.length===0){ toast('Agrega al menos un producto'); return; }
+
+  // suma al stock general
+  itemsInternamientoTemp.forEach(it=>{
+    const prod = buscarItem(it.productId);
+    if(prod) prod.cantidad += it.cantidad;
+  });
+
+  internamientos.push({
+    id: nextInternamientoId++,
+    grupo,
+    fecha,
+    responsable: document.getElementById('responsableInternamiento').value.trim(),
+    obs: document.getElementById('obsInternamiento').value.trim(),
+    items: JSON.parse(JSON.stringify(itemsInternamientoTemp)),
+    creado: new Date().toISOString()
+  });
+
+  persistirTodo();
+
+  const filasFinal = resumenInternamientoGrupo(grupo);
+  const faltantes = filasFinal.filter(f=>f.entregado - f.devuelto > 0);
+  if(faltantes.length>0){
+    toast('Internamiento guardado. Faltan '+faltantes.length+' producto(s) por devolver');
+  } else {
+    toast('Internamiento guardado. Todo el material fue devuelto ✓');
+  }
+
+  itemsInternamientoTemp = [];
+  document.getElementById('responsableInternamiento').value='';
+  document.getElementById('obsInternamiento').value='';
+  renderItemsInternamientoTemp();
+  renderResumenInternamiento();
+  renderStock();
+  renderDatalistProductos();
+  renderDatalistProductosIngreso();
+  renderDatalistProductosInternamiento();
+  if(typeof renderDatalistProductosPrestamo==='function') renderDatalistProductosPrestamo();
+  poblarGruposResumen();
+  renderResumenMultiGrupo();
+}
+document.getElementById('fechaInternamiento').value = hoyISO();
+
+/* ============================================================
+   RESUMEN MULTI-GRUPO PARA COMPARTIR (INTERNAMIENTO)
+=============================================================*/
+let gruposResumenSeleccionados = [];
+
+function poblarGruposResumen(){
+  const gruposUsados = [...new Set(despachos.map(d=>d.grupo))].sort();
+  const cont = document.getElementById('gruposResumenGrid');
+  if(!cont) return;
+  gruposResumenSeleccionados = gruposResumenSeleccionados.filter(g=>gruposUsados.includes(g));
+  cont.innerHTML = gruposUsados.length
+    ? gruposUsados.map(g=>{
+        const sel = gruposResumenSeleccionados.includes(g);
+        return `<div class="grupo-chip${sel?' sel':''}" onclick="toggleGrupoResumen('${g}')">${g}</div>`;
+      }).join('')
+    : '<div class="empty">No hay grupos con despachos registrados.</div>';
+}
+
+function toggleGrupoResumen(g){
+  const idx = gruposResumenSeleccionados.indexOf(g);
+  if(idx>=0) gruposResumenSeleccionados.splice(idx,1);
+  else gruposResumenSeleccionados.push(g);
+  poblarGruposResumen();
+  renderResumenMultiGrupo();
+}
+
+function limpiarGruposResumen(){
+  gruposResumenSeleccionados = [];
+  poblarGruposResumen();
+  renderResumenMultiGrupo();
+}
+
+function renderResumenMultiGrupo(){
+  const cont = document.getElementById('resumenMultiGrupoDetalle');
+  const titulo = document.getElementById('resumenMultiGrupoTitulo');
+  const btnWpp = document.getElementById('btnResumenMultiWhatsapp');
+  if(!cont) return;
+  titulo.style.display = 'none';
+
+  if(gruposResumenSeleccionados.length===0){
+    cont.innerHTML = '<div class="empty">Selecciona uno o más grupos para ver producto, despachado, devuelto y faltante.</div>';
+    btnWpp.disabled = true;
+    return;
+  }
+
+  const gruposOrdenados = gruposResumenSeleccionados.slice().sort();
+  const subFundo = 'Fundo ' + (NOMBRES_FUNDO[FUNDO_ACTUAL] || 'Arato');
+  const badgeTexto = gruposOrdenados.length===1 ? gruposOrdenados[0] : gruposOrdenados.join('·');
+  const badgeEstilo = gruposOrdenados.length>1 ? 'font-size:18px;' : '';
+
+  const secciones = gruposOrdenados.map(g=>{
+    const filas = resumenInternamientoGrupo(g).sort((a,b)=>a.descripcion.localeCompare(b.descripcion));
+    if(filas.length===0){
+      return `
+        <div class="comprobante-seccion">
+          <div class="comprobante-seccion-titulo">
+            <span class="comprobante-badge-mini">${g}</span>
+            <span class="comprobante-productos-titulo" style="margin:0;">Grupo ${g}</span>
+          </div>
+          <div class="empty">Sin despachos registrados.</div>
+        </div>`;
+    }
+    return `
+      <div class="comprobante-seccion">
+        <div class="comprobante-seccion-titulo">
+          <span class="comprobante-badge-mini">${g}</span>
+          <span class="comprobante-productos-titulo" style="margin:0;">Grupo ${g}</span>
+        </div>
+        <table>
+          <thead><tr><th>Producto</th><th>Despachado</th><th>Devuelto</th><th>Faltante</th></tr></thead>
+          <tbody>
+            ${filas.map(f=>{
+              const faltante = f.entregado - f.devuelto;
+              const estilo = faltante>0 ? 'color:var(--rojo); font-weight:700;' : 'color:var(--verde-d); font-weight:700;';
+              return `<tr>
+                <td>${f.descripcion}</td>
+                <td>${f.entregado} ${f.unidad}</td>
+                <td>${f.devuelto} ${f.unidad}</td>
+                <td style="${estilo}">${faltante>0 ? faltante+' '+f.unidad : 'Completo'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }).join('');
+
+  cont.innerHTML = `
+    <div class="comprobante-doc">
+      <div class="comprobante-header">
+        <div class="titulos">
+          <h3>RESUMEN DE INTERNAMIENTO</h3>
+          <div class="sub">${subFundo}</div>
+          <div class="sub" style="margin-top:6px; font-size:12px;">📅 ${fmtFecha(hoyISO())}</div>
+        </div>
+        <div class="comprobante-grupo-badge" style="${badgeEstilo}">${badgeTexto}</div>
+      </div>
+      <div class="comprobante-body">
+        ${secciones}
+      </div>
+      <div class="comprobante-footer">Generado por el sistema de Control de Almacén</div>
+    </div>
+  `;
+
+  btnWpp.disabled = false;
+}
+
+function enviarResumenMultiGrupoComoImagen(){
+  if(typeof html2canvas==='undefined'){
+    toast('No se pudo cargar la herramienta de imagen (revisa tu conexión)');
+    return;
+  }
+  if(gruposResumenSeleccionados.length===0){ toast('Selecciona al menos un grupo'); return; }
+  const el = document.getElementById('resumenMultiGrupoCaptura');
+  html2canvas(el, {backgroundColor:'#ffffff', scale:2}).then(canvas=>{
+    canvas.toBlob(async (blob)=>{
+      if(!blob){ toast('No se pudo generar la imagen'); return; }
+      const gruposOrdenados = gruposResumenSeleccionados.slice().sort();
+      const nombreArchivo = 'internamiento_grupos_'+gruposOrdenados.join('')+'_'+hoyISO()+'.png';
+      const file = new File([blob], nombreArchivo, {type:'image/png'});
+
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        try{
+          await navigator.share({files:[file], title:'Resumen de internamiento', text:'Producto, despachado, devuelto y faltante por grupo'});
+          return;
+        }catch(err){
+          // usuario canceló u ocurrió un error; continuar con descarga
+        }
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nombreArchivo;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('Imagen guardada. Ábrela en WhatsApp para enviarla.');
+      window.open('https://wa.me/?text=' + encodeURIComponent('Resumen de internamiento adjunto (imagen guardada en el dispositivo).'), '_blank');
+    }, 'image/png');
+  });
+}
+
+/* ============================================================
+   TAB HISTORIAL
+=============================================================*/
+function poblarGruposHistorial(){
+  const gruposUsados = [...new Set(despachos.map(d=>d.grupo))].sort();
+  const selGrupoHist = document.getElementById('grupoHistorialSelect');
+  const valorPrevio = selGrupoHist.value;
+  selGrupoHist.innerHTML = '<option value="">-- Selecciona un grupo --</option>' + gruposUsados.map(g=>`<option value="${g}">Grupo ${g}</option>`).join('');
+  if(gruposUsados.includes(valorPrevio)) selGrupoHist.value = valorPrevio;
+}
+document.getElementById('grupoHistorialSelect').addEventListener('change', renderDetalleGrupoHistorial);
+document.getElementById('fechaHistorialSelect').addEventListener('change', renderDetalleGrupoHistorial);
+
+function limpiarFechaHistorial(){
+  document.getElementById('fechaHistorialSelect').value = '';
+  renderDetalleGrupoHistorial();
+}
+
+function renderDetalleGrupoHistorial(){
+  const g = document.getElementById('grupoHistorialSelect').value;
+  const fecha = document.getElementById('fechaHistorialSelect').value;
+  const cont = document.getElementById('detalleGrupoHistorial');
+  const tituloCont = document.getElementById('capturaHistorialTitulo');
+  const btnWpp = document.getElementById('btnEnviarWhatsapp');
+  tituloCont.style.display = 'none';
+
+  if(!g && !fecha){
+    cont.innerHTML = '<div class="empty">Selecciona un grupo y/o una fecha para ver qué productos se entregaron, a quién y quién los entregó.</div>';
+    btnWpp.disabled = true;
+    return;
+  }
+
+  const despachosFiltrados = despachos.filter(d=> (!g || d.grupo===g) && (!fecha || d.fecha===fecha) );
+  const filas = [];
+  despachosFiltrados.forEach(d=>{
+    d.items.forEach(it=>{
+      filas.push({despachoId:d.id, grupo:d.grupo, producto:it.descripcion, unidad:it.unidad, cantidad:it.cantidad, fecha:d.fecha, almacenero:d.operador||'—', recepcion:d.responsableRecepcion||'—'});
+    });
+  });
+
+  const subFundo = 'Fundo ' + (NOMBRES_FUNDO[FUNDO_ACTUAL] || 'Arato');
+  const subFecha = fecha ? fmtFecha(fecha) : 'Todas las fechas';
+  const badgeTexto = g || 'TODOS';
+  const badgeEstilo = g ? '' : 'font-size:16px; letter-spacing:.5px;';
+
+  if(filas.length===0){
+    cont.innerHTML = `
+      <div class="comprobante-doc">
+        <div class="comprobante-header">
+          <div class="titulos">
+            <h3>HISTORIAL DE DESPACHOS</h3>
+            <div class="sub">${subFundo}</div>
+            <div class="sub" style="margin-top:6px; font-size:12px;">📅 ${subFecha}</div>
+          </div>
+          <div class="comprobante-grupo-badge" style="${badgeEstilo}">${badgeTexto}</div>
+        </div>
+        <div class="comprobante-body">
+          <div class="empty">No se registran despachos${g? ' para el grupo '+g : ''}${fecha? ' en la fecha seleccionada.' : '.'}</div>
+        </div>
+        <div class="comprobante-footer">Generado por el sistema de Control de Almacén</div>
+      </div>
+    `;
+    btnWpp.disabled = true;
+    return;
+  }
+
+  filas.sort((a,b)=> b.fecha.localeCompare(a.fecha) || a.grupo.localeCompare(b.grupo) || a.producto.localeCompare(b.producto));
+  cont.innerHTML = `
+    <div class="comprobante-doc">
+      <div class="comprobante-header">
+        <div class="titulos">
+          <h3>HISTORIAL DE DESPACHOS</h3>
+          <div class="sub">${subFundo}</div>
+          <div class="sub" style="margin-top:6px; font-size:12px;">📅 ${subFecha}</div>
+        </div>
+        <div class="comprobante-grupo-badge" style="${badgeEstilo}">${badgeTexto}</div>
+      </div>
+      <div class="comprobante-body">
+        <div class="comprobante-productos-titulo">Productos entregados</div>
+        <table>
+          <thead><tr>${!g?'<th>Grupo</th>':''}<th>Producto</th><th>Cant.</th><th>Fecha</th><th>Almacenero</th><th>Recepción</th><th></th></tr></thead>
+          <tbody>
+            ${filas.map(f=>`<tr>
+              ${!g?`<td>${f.grupo}</td>`:''}
+              <td>${f.producto}</td>
+              <td>${f.cantidad} ${f.unidad}</td>
+              <td>${fmtFecha(f.fecha)}</td>
+              <td>${f.almacenero}</td>
+              <td>${f.recepcion}</td>
+              <td><button class="btn btn-gris btn-sm no-captura" onclick="abrirModalEditarDespacho(${f.despachoId})">✎</button></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="comprobante-footer">Generado por el sistema de Control de Almacén</div>
+    </div>
+  `;
+  btnWpp.disabled = false;
+}
+
+function renderHistorial(){
+  poblarGruposHistorial();
+  renderDetalleGrupoHistorial();
+}
+
+/* --- enviar consulta como imagen a WhatsApp --- */
+function enviarHistorialComoImagen(){
+  if(typeof html2canvas==='undefined'){
+    toast('No se pudo cargar la herramienta de imagen (revisa tu conexión)');
+    return;
+  }
+  const el = document.getElementById('capturaHistorial');
+  // ocultar botones de edición dentro de la captura
+  const botonesOcultos = el.querySelectorAll('.no-captura');
+  botonesOcultos.forEach(b=> b.style.visibility='hidden');
+
+  html2canvas(el, {backgroundColor:'#ffffff', scale:2}).then(canvas=>{
+    botonesOcultos.forEach(b=> b.style.visibility='');
+    canvas.toBlob(async (blob)=>{
+      if(!blob){ toast('No se pudo generar la imagen'); return; }
+      const nombreArchivo = 'despacho_'+(document.getElementById('grupoHistorialSelect').value||'todos')+'_'+hoyISO()+'.png';
+      const file = new File([blob], nombreArchivo, {type:'image/png'});
+
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        try{
+          await navigator.share({files:[file], title:'Despacho de almacén', text:'Detalle de despacho'});
+          return;
+        }catch(err){
+          // usuario canceló u ocurrió un error; continuar con descarga
+        }
+      }
+      // Fallback: descargar la imagen y abrir WhatsApp para adjuntarla manualmente
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nombreArchivo;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('Imagen guardada. Ábrela en WhatsApp para enviarla.');
+      window.open('https://wa.me/?text=' + encodeURIComponent('Detalle de despacho adjunto (imagen guardada en el dispositivo).'), '_blank');
+    }, 'image/png');
+  });
+}
+
+/* --- editar despacho --- */
+let despachoEnEdicionItems = [];
+function abrirModalEditarDespacho(id){
+
+  const d = despachos.find(x=>x.id===id);
+  if(!d) return;
+  document.getElementById('editDespachoId').value = d.id;
+  document.getElementById('editDespachoGrupo').value = d.grupo;
+  document.getElementById('editDespachoFecha').value = d.fecha;
+  document.getElementById('editDespachoOperador').value = d.operador||'';
+  document.getElementById('editDespachoResponsableRecepcion').value = d.responsableRecepcion||'';
+  document.getElementById('editDespachoObs').value = d.obs||'';
+  despachoEnEdicionItems = JSON.parse(JSON.stringify(d.items));
+  renderEditDespachoItems();
+  abrirModal('modalDespacho');
+}
+function renderEditDespachoItems(){
+  const cont = document.getElementById('editDespachoItems');
+  if(despachoEnEdicionItems.length===0){
+    cont.innerHTML = '<div class="empty">Sin productos.</div>';
+    return;
+  }
+  cont.innerHTML = despachoEnEdicionItems.map((it,idx)=>`
+    <div class="item-linea">
+      <span class="desc">${it.descripcion} <small style="color:#8a978f">(${it.unidad})</small></span>
+      <input type="number" min="0" value="${it.cantidad}" style="width:70px;" onchange="cambiarCantidadEditDespacho(${idx}, this.value)">
+      <button class="btn btn-rojo btn-sm" onclick="quitarItemEditDespacho(${idx})">✕</button>
+    </div>
+  `).join('');
+}
+function cambiarCantidadEditDespacho(idx, val){
+  despachoEnEdicionItems[idx].cantidad = Number(val)||0;
+}
+function quitarItemEditDespacho(idx){
+  despachoEnEdicionItems.splice(idx,1);
+  renderEditDespachoItems();
+}
+function guardarDespachoEditado(){
+  const id = Number(document.getElementById('editDespachoId').value);
+  const d = despachos.find(x=>x.id===id);
+  if(!d) return;
+
+  // restaurar stock de cantidades originales
+  d.items.forEach(it=>{
+    const prod = buscarItem(it.productId);
+    if(prod) prod.cantidad += it.cantidad;
+  });
+
+  // validar nuevas cantidades contra stock ya restaurado
+  for(const it of despachoEnEdicionItems){
+    const prod = buscarItem(it.productId);
+    if(!prod || it.cantidad>prod.cantidad){
+      toast('Stock insuficiente para '+it.descripcion+' al guardar cambios');
+      // revertir restauración (volver a aplicar despacho original) para no dejar datos inconsistentes
+      d.items.forEach(it2=>{
+        const p2 = buscarItem(it2.productId);
+        if(p2) p2.cantidad -= it2.cantidad;
+      });
+      return;
+    }
+  }
+  // aplicar nuevas cantidades
+  despachoEnEdicionItems.forEach(it=>{
+    const prod = buscarItem(it.productId);
+    prod.cantidad -= it.cantidad;
+  });
+
+  d.grupo = document.getElementById('editDespachoGrupo').value.trim().toUpperCase();
+  d.fecha = document.getElementById('editDespachoFecha').value;
+  d.operador = document.getElementById('editDespachoOperador').value.trim();
+  d.responsableRecepcion = document.getElementById('editDespachoResponsableRecepcion').value.trim();
+  d.obs = document.getElementById('editDespachoObs').value.trim();
+  d.items = despachoEnEdicionItems.filter(it=>it.cantidad>0);
+
+  persistirTodo();
+  cerrarModal('modalDespacho');
+  renderStock();
+  renderHistorial();
+  toast('Despacho actualizado');
+}
+function eliminarDespachoActual(){
+  const id = Number(document.getElementById('editDespachoId').value);
+  const d = despachos.find(x=>x.id===id);
+  if(!d) return;
+  if(!confirm('¿Eliminar este despacho? Se restaurará el stock.')) return;
+  d.items.forEach(it=>{
+    const prod = buscarItem(it.productId);
+    if(prod) prod.cantidad += it.cantidad;
+  });
+  despachos = despachos.filter(x=>x.id!==id);
+  persistirTodo();
+  cerrarModal('modalDespacho');
+  renderStock();
+  renderHistorial();
+  toast('Despacho eliminado y stock restaurado');
+}
+
+/* ============================================================
+   TAB INGRESO
+=============================================================*/
+document.getElementById('fechaIngreso').value = hoyISO();
+function renderDatalistProductosIngreso(){
+  const dl = document.getElementById('listaProductosIngreso');
+  dl.innerHTML = stock.map(i=>`<option value="${i.descripcion}">`).join('');
+}
+renderDatalistProductosIngreso();
+
+function registrarIngreso(){
+  const nombre = document.getElementById('buscarProductoIngreso').value.trim();
+  const item = stock.find(i=>i.descripcion===nombre);
+  if(!item){ toast('Selecciona un producto válido de la lista'); return; }
+  const cant = Number(document.getElementById('cantidadIngreso').value);
+  if(!cant || cant<=0){ toast('Ingresa una cantidad válida'); return; }
+  const fecha = document.getElementById('fechaIngreso').value || hoyISO();
+  const obs = document.getElementById('obsIngreso').value.trim();
+
+  item.cantidad += cant;
+  ingresos.push({id: nextIngresoId++, productId:item.id, descripcion:item.descripcion, unidad:item.unidad, cantidad:cant, fecha, obs, creado:new Date().toISOString()});
+
+  persistirTodo();
+  document.getElementById('buscarProductoIngreso').value='';
+  document.getElementById('cantidadIngreso').value=1;
+  document.getElementById('obsIngreso').value='';
+  renderStock();
+  renderIngresos();
+  toast('Ingreso registrado: +'+cant+' '+item.unidad);
+}
+function registrarNuevoProducto(){
+  const desc = document.getElementById('nuevoDescIngreso').value.trim();
+  if(!desc){ toast('Ingresa la descripción del producto'); return; }
+  const und = document.getElementById('nuevoUndIngreso').value.trim() || 'UND';
+  const cant = Number(document.getElementById('nuevoCantIngreso').value)||0;
+  const estado = document.getElementById('nuevoEstadoIngreso').value;
+
+  const nuevo = {id: nextItemId++, descripcion:desc, unidad:und, cantidad:cant, estado, obs:''};
+  stock.push(nuevo);
+  persistirTodo();
+
+  document.getElementById('nuevoDescIngreso').value='';
+  document.getElementById('nuevoUndIngreso').value='';
+  document.getElementById('nuevoCantIngreso').value=0;
+  renderStock();
+  renderDatalistProductosIngreso();
+  renderDatalistProductos();
+  if(typeof renderDatalistProductosPrestamo==='function') renderDatalistProductosPrestamo();
+  toast('Producto creado en stock');
+}
+function renderIngresos(){
+  const cont = document.getElementById('listaIngresos');
+  if(ingresos.length===0){
+    cont.innerHTML = '<div class="empty">No hay ingresos registrados.</div>';
+    return;
+  }
+  const ordenados = ingresos.slice().sort((a,b)=> b.fecha.localeCompare(a.fecha) || b.id-a.id);
+  cont.innerHTML = ordenados.map(g=>`
+    <div class="despacho-mini">
+      <div class="top">
+        <span><strong>${g.descripcion}</strong> — ${fmtFecha(g.fecha)}</span>
+        <span style="color:var(--verde-d); font-weight:700;">+${g.cantidad} ${g.unidad}</span>
+      </div>
+      ${g.obs?`<div style="margin-top:4px; font-size:12px; color:#8a978f;">📝 ${g.obs}</div>`:''}
+    </div>
+  `).join('');
+}
+
+/* ============================================================
+   TAB PRÉSTAMOS
+=============================================================*/
+function renderDatalistProductosPrestamo(){
+  const dl = document.getElementById('listaProductosPrestamo');
+  if(!dl) return;
+  dl.innerHTML = stock.map(i=>`<option value="${i.descripcion}">`).join('');
+}
+
+function registrarPrestamo(){
+  const nombre = document.getElementById('buscarProductoPrestamo').value.trim();
+  const item = stock.find(i=>i.descripcion===nombre);
+  if(!item){ toast('Selecciona un producto válido de la lista'); return; }
+  const cant = Number(document.getElementById('cantidadPrestamo').value);
+  if(!cant || cant<=0){ toast('Ingresa una cantidad válida'); return; }
+  if(cant > item.cantidad){ toast(`Stock insuficiente. Disponible: ${item.cantidad}`); return; }
+  const responsable = document.getElementById('responsablePrestamo').value.trim();
+  if(!responsable){ toast('Ingresa el nombre del responsable'); return; }
+  const fecha = document.getElementById('fechaPrestamo').value || hoyISO();
+  const obs = document.getElementById('obsPrestamo').value.trim();
+
+  item.cantidad -= cant;
+  prestamos.push({
+    id: nextPrestamoId++,
+    productId: item.id,
+    descripcion: item.descripcion,
+    unidad: item.unidad,
+    cantidad: cant,
+    responsable,
+    fecha,
+    obs,
+    creado: new Date().toISOString()
+  });
+
+  persistirStock();
+  document.getElementById('buscarProductoPrestamo').value='';
+  document.getElementById('cantidadPrestamo').value=1;
+  document.getElementById('responsablePrestamo').value='';
+  document.getElementById('obsPrestamo').value='';
+  document.getElementById('stockDisponiblePrestamoHint').textContent='';
+  renderStock();
+  renderDatalistProductosPrestamo();
+  renderHistorialPrestamos();
+  toast('Préstamo registrado: -'+cant+' '+item.unidad+' a '+responsable);
+}
+
+function renderHistorialPrestamos(){
+  const cont = document.getElementById('listaPrestamos');
+  const btnWpp = document.getElementById('btnPrestamoWhatsapp');
+  const q = (document.getElementById('buscarPrestamo').value||'').toUpperCase().trim();
+  const filtrados = prestamos.filter(p=>
+    !q || p.responsable.toUpperCase().includes(q) || p.descripcion.toUpperCase().includes(q)
+  );
+  if(filtrados.length===0){
+    cont.innerHTML = '<div class="empty">No hay préstamos registrados.</div>';
+    if(btnWpp) btnWpp.disabled = true;
+    return;
+  }
+  const ordenados = filtrados.slice().sort((a,b)=> b.fecha.localeCompare(a.fecha) || b.id-a.id);
+  cont.innerHTML = `
+    <table>
+      <thead><tr><th>Responsable</th><th>Producto</th><th>Cantidad</th><th>Fecha</th><th>Obs.</th></tr></thead>
+      <tbody>
+        ${ordenados.map(p=>`<tr>
+          <td>${p.responsable}</td>
+          <td>${p.descripcion}</td>
+          <td>${p.cantidad} ${p.unidad}</td>
+          <td>${fmtFecha(p.fecha)}</td>
+          <td>${p.obs||'—'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  `;
+  if(btnWpp) btnWpp.disabled = false;
+}
+document.getElementById('buscarPrestamo').addEventListener('input', renderHistorialPrestamos);
+
+function enviarPrestamosComoImagen(){
+  if(typeof html2canvas==='undefined'){
+    toast('No se pudo cargar la herramienta de imagen (revisa tu conexión)');
+    return;
+  }
+  const el = document.getElementById('capturaPrestamos');
+  html2canvas(el, {backgroundColor:'#ffffff', scale:2}).then(canvas=>{
+    canvas.toBlob(async (blob)=>{
+      if(!blob){ toast('No se pudo generar la imagen'); return; }
+      const nombreArchivo = 'prestamos_'+hoyISO()+'.png';
+      const file = new File([blob], nombreArchivo, {type:'image/png'});
+
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        try{
+          await navigator.share({files:[file], title:'Préstamos de almacén', text:'Historial de préstamos'});
+          return;
+        }catch(err){
+          // usuario canceló u ocurrió un error; continuar con descarga
+        }
+      }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nombreArchivo;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('Imagen guardada. Ábrela en WhatsApp para enviarla.');
+      window.open('https://wa.me/?text=' + encodeURIComponent('Historial de préstamos adjunto (imagen guardada en el dispositivo).'), '_blank');
+    }, 'image/png');
+  });
+}
+
+/* ============================================================
+   INICIO
+=============================================================*/
+renderStock();
+renderIngresos();
+</script>
+</body>
+</html>
